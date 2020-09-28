@@ -7,5 +7,5 @@ setup(
     packages=find_packages(),
     long_description=open(join(dirname(__file__), 'README.md'), encoding='utf-8').read(),
     long_description_content_type='text/markdown',
-    install_reqs=['lxml>=4.5.2']
+    install_requires=['lxml>=4.5.2']
 )

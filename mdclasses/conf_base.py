@@ -114,7 +114,7 @@ class ConfObject(Supportable):
 
     @property
     def file_name(self):
-        return path.join(self.root_path, resolve_path(self.obj_type, self.name))
+        return path.join(self.root_path, self.relative_path)
 
     @property
     def full_name(self):
@@ -123,6 +123,10 @@ class ConfObject(Supportable):
     @property
     def root_path(self):
         return self.parent.root_path
+
+    @property
+    def relative_path(self):
+        return resolve_path(self.obj_type, self.name)
 
     def set_support(self, support: dict):
 
