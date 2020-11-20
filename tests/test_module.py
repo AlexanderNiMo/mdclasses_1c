@@ -34,6 +34,26 @@ class TestModuleParser(case.TestCase):
 
         self.assertIsNotNone(module.elements[6].elements[15].elements[7].expansion_modifier, 'Не корректно определены модификаторы подпрограммы')
 
+    def test_find_sub_program(self):
+        module_path = Path(test_module).absolute()
+        parser = ModuleParser()
+        module = create_module(parser, module_path)
+
+        sub_prog = module.find_sub_program('СообщитьПользователю')
+
+        self.assertEqual(sub_prog.name, 'СообщитьПользователю', 'Не верно найдена процедура')
+        self.assertIsInstance(sub_prog, Procedure, 'Не верно найдена процедура')
+
+        sub_prog = module.find_sub_program('МакетСуществует')
+        self.assertEqual(sub_prog.name, 'МакетСуществует', 'Не верно найдена функция')
+        self.assertIsInstance(sub_prog, Function, 'Не верно найдена функция')
+
+        with self.assertRaises(KeyError) as error:
+            module.find_sub_program('СообщитьПользователю1111111')
+
+        self.assertEqual(error.exception.args[0], 'В модуле нет подпрограммы СообщитьПользователю1111111.',
+                         'Неожиданное исключение')
+
     def emulate_change_module_element(self, element: ModuleElement):
         result = True
 

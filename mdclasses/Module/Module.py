@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, List, Generator
+from typing import Optional, Dict, List, Generator, Union
 import pathlib
 
 from mdclasses.Module.ModuleParser import ModuleParser, ModuleBlock
@@ -52,12 +52,13 @@ def mutable(f_setter):
     def warper(s, *args, **kwargs):
         s._ModuleElement__changed = True
         f_setter(s, *args, **kwargs)
+
     return warper
 
 
 class ModuleElement(ABC):
 
-    def __init__(self, start:int, end:int, text: str):
+    def __init__(self, start: int, end: int, text: str):
         self.text_range: TextRange = TextRange(start, end)
         self.__changed = False
         self.__original_text = text
@@ -89,7 +90,7 @@ class ModuleElement(ABC):
 
 class Subordinates(ModuleElement):
 
-    def __init__(self, start:int, end:int, text: str, end_text: str = '', elements: List['ModuleElement'] = None):
+    def __init__(self, start: int, end: int, text: str, end_text: str = '', elements: List['ModuleElement'] = None):
         super(Subordinates, self).__init__(start=start, end=end, text=text)
         self.__start_text: str = text
         self.__end_text: str = end_text
@@ -240,7 +241,12 @@ class SubProgram(Subordinates):
 
     @mutable
     def del_param(self, param_name: str):
-        self.__params.remove(filter(lambda x: x.name == param_name, self.__params)[0])
+        try:
+            _param = next(filter(lambda x: x.name == param_name, self.__params))
+        except StopIteration:
+            raise KeyError(f'Нет такого параметра.')
+
+        self.__params.remove(_param)
 
     @property
     def public(self) -> bool:
@@ -318,7 +324,8 @@ class Procedure(SubProgram):
 
 class PreprocessorInstruction(Subordinates):
 
-    def __init__(self, instruction_type: str, start: int, end: int, text: str, end_text: str, elements: Optional[List[ModuleElement]]=None):
+    def __init__(self, instruction_type: str, start: int, end: int, text: str, end_text: str,
+                 elements: Optional[List[ModuleElement]] = None):
         super(PreprocessorInstruction, self).__init__(
             start=start, end=end, elements=elements, text=text, end_text=end_text)
         self.__instruction_type = instruction_type
@@ -344,7 +351,8 @@ class PreprocessorInstruction(Subordinates):
 
 class Region(Subordinates):
 
-    def __init__(self, name: str, text: str, start: int, end: int, end_text: str, elements: Optional[List[ModuleElement]] = None):
+    def __init__(self, name: str, text: str, start: int, end: int, end_text: str,
+                 elements: Optional[List[ModuleElement]] = None):
         super(Region, self).__init__(start=start, end=end, text=text, end_text=end_text, elements=elements)
         self.name: str = name
 
@@ -380,9 +388,10 @@ class Module(Subordinates):
         super(Module, self).__init__(start=start, end=end, elements=elements, text=text)
 
         self.name = ''
+        self.path: Optional[pathlib.Path] = None
 
-        self.__procedures = None
-        self.__functions = None
+        self.__procedures: Optional[Dict[str, Procedure]] = None
+        self.__functions: Optional[Dict[str, Function]] = None
 
     @property
     def text(self):
@@ -391,34 +400,65 @@ class Module(Subordinates):
     def _get_text(self):
         return '\n'.join(e.text for e in self.elements)
 
+    def find_sub_program(self, name: str) -> Union[Procedure, Function]:
+
+        def _find_by_name(proc_name: str, data: Optional[dict], gen: Generator):
+            def filter_name(sub_proc: Union[Procedure, Function]) -> bool:
+                return sub_proc.name == proc_name
+
+            try:
+                if data is None:
+                    element = next(filter(filter_name, gen))
+                else:
+                    element = data[name]
+            except (StopIteration, KeyError) as e:
+                element = None
+
+            return element
+
+        sub_proc = _find_by_name(name, self.__functions, self.functions())
+
+        if sub_proc is not None:
+            return sub_proc
+
+        sub_proc = _find_by_name(name, self.__procedures, self.procedures())
+
+        if sub_proc is None:
+            raise KeyError(f'В модуле нет подпрограммы {name}.')
+
+        return sub_proc
+
     def functions(self) -> Generator:
         if self.__functions is None:
-            self.__functions = list()
+            self.__functions = dict()
             for element in self.element_by_class(Function):
-                self.__functions.append(element)
+                self.__functions[element.name] = element
                 yield element
         else:
-            for element in self.__functions:
+            for element in self.__functions.values():
                 yield element
 
     def procedures(self) -> Generator:
         if self.__procedures is None:
-            self.__procedures = list()
+            self.__procedures = dict()
             for element in self.element_by_class(Procedure):
-                self.__procedures.append(element)
+                self.__procedures[element.name] = element
                 yield element
         else:
-            for element in self.__procedures:
+            for element in self.__procedures.values():
                 yield element
+
+    def save_to_file(self):
+        self.path.write_text(self.text, 'utf-8-sig')
 
 
 def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
-
     module_text = module_path.read_text('utf-8-sig')
 
     block = parser.parse_module_text(module_text)
     module = Module.from_data(block)
     module.name = module_path.stem
+    module.path = module_path
 
     for element in block.sub_elements:
         module.elements.append(_create_module_element(element))
