@@ -152,6 +152,9 @@ class SupportConfigurationParser:
 
     def parse(self) -> dict:
         conf_data = {}
+        if not path.exists(self.file_path):
+            return dict()
+
         with open(self.file_path, r'r', encoding='utf-8-sig') as f:
             data = f.read()
 

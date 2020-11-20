@@ -2,7 +2,7 @@ from unittest import case
 from pathlib import Path
 from json import dumps, load
 
-from mdclasses.builder import create_configuration, read_configuration_objects
+from mdclasses.builder import create_configuration, read_configuration_objects, read_configuration
 from mdclasses import ObjectType, ConfObject, Configuration, Module
 
 test_data_root = './test_data/config'
@@ -80,8 +80,11 @@ class TestConfiguration(case.TestCase):
         self.assertEqual(
             dumps(report.to_dict(), ensure_ascii=False),
             Path(json_report_path).read_text(encoding=encoding),
-            'Объект не верно сериализован'
-        )
+            'Объект не верно сериализован')
+
+    def test_read_all_configuration(self):
+        conf_path = Path(test_data_root).absolute()
+        read_configuration(conf_path)
 
     def test_from_json(self):
         with Path(json_config_path).open('r', encoding=encoding) as f:

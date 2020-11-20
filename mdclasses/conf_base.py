@@ -287,7 +287,7 @@ class Configuration(Supportable):
         self.support_type = SupportType.NONE_SUPPORT
 
     def set_support(self, support_data: dict):
-        conf_support = support_data[self.name]['conf_objects']
+        conf_support = {}
 
         for key in support_data:
             if key == self.name:
