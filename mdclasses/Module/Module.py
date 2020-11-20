@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, List, Generator
+import pathlib
 
 from mdclasses.Module.ModuleParser import ModuleParser, ModuleBlock
 
@@ -378,6 +379,8 @@ class Module(Subordinates):
     def __init__(self, text: str, start: int, end: int, elements: Optional[List[ModuleElement]] = None):
         super(Module, self).__init__(start=start, end=end, elements=elements, text=text)
 
+        self.name = ''
+
         self.__procedures = None
         self.__functions = None
 
@@ -409,10 +412,13 @@ class Module(Subordinates):
                 yield element
 
 
-def create_module(parser: ModuleParser, module_text: str) -> Module:
+def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
+
+    module_text = module_path.read_text('utf-8-sig')
 
     block = parser.parse_module_text(module_text)
     module = Module.from_data(block)
+    module.name = module_path.stem
 
     for element in block.sub_elements:
         module.elements.append(_create_module_element(element))

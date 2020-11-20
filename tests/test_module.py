@@ -13,11 +13,11 @@ class TestModuleParser(case.TestCase):
     def test_parse_module(self):
 
         module_path = Path(test_module).absolute()
-        text = module_path.read_text('utf-8-sig')
-
         parser = ModuleParser()
 
-        module = create_module(parser, text)
+        module = create_module(parser, module_path)
+        text = module_path.read_text('utf-8-sig')
+
         types = [TextData, Region, Function, Procedure, PreprocessorInstruction]
 
         for val_type in types:
@@ -29,6 +29,8 @@ class TestModuleParser(case.TestCase):
         module_text = module.text
 
         self.assertEqual(text, module_text, 'Сгенерированный текст модуля должен быть идентичен исходному!')
+
+        self.assertEqual(module.name, module_path.stem, 'Имя модуля определено не корректно')
 
     def emulate_change_module_element(self, element: ModuleElement):
         result = True

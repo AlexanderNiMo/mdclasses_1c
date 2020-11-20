@@ -19,6 +19,8 @@ class Form:
         self.description_path = description_path
         self.structure_path = structure_path
 
+        self.name = description_path.stem
+
         self._read_module()
 
     def _read_module(self):
@@ -28,8 +30,7 @@ class Form:
 
         for element in ext_path.iterdir():
             if element.is_file() and element.suffix == '.bsl':
-                text = element.read_text('utf-8-sig')
-                self.module = create_module(parser, text)
+                self.module = create_module(parser, element)
 
     def read_structure(self):
         pass

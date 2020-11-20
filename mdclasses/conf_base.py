@@ -163,8 +163,7 @@ class ConfObject(Supportable):
 
         for element in ext_path.iterdir():
             if element.is_file() and element.suffix == '.bsl':
-                text = element.read_text('utf-8-sig')
-                self.modules.append(create_module(parser, text))
+                self.modules.append(create_module(parser, element))
 
     def read_forms(self):
         self.forms = []
