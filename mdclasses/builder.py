@@ -9,7 +9,7 @@ def create_configuration(config_dir: str):
     config_data = path.join(config_dir, resolve_path(ObjectType.CONFIGURATION))
     parser = XMLParser(config_data, ObjectType.CONFIGURATION)
 
-    uuid, child_data, name = parser.parse_configuration()
+    uuid, child_data, name, props = parser.parse_configuration()
 
     return Configuration(uuid, child_data, config_dir, name)
 
@@ -45,15 +45,10 @@ def save_to_json(config_dir, json_path):
     conf = read_configuration(config_dir)
     data = conf.to_dict()
     with open(json_path, r'w') as f:
-        json_str = dump(data, f)
+        dump(data, f)
 
 
 def read_from_json(json_path: str):
-
     with open(json_path, 'r') as f:
         data = load(f)
         conf = Configuration.from_dict(data, None)
-
-    f=1
-
-

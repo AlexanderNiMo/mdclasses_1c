@@ -20,6 +20,17 @@ class XMLParser:
     def _get_property(self, obj: ElementTree, tag_name: str):
         return obj.xpath(f'./tns:Properties/tns:{tag_name}', namespaces={'tns': obj.nsmap[None]})
 
+    def _read_properties(self, obj: ElementTree):
+        props = {}
+        for el in obj.xpath(f'./tns:Properties/*', namespaces={'tns': obj.nsmap[None]}):
+            tag = QName(el).localname
+            if len(el) == 0:
+                val = el.text
+            else:
+                val = self._read_properties(el)
+            props[tag] = val
+        return props
+
     def parse_configuration(self):
 
         configuration = self._get_root()
@@ -28,6 +39,8 @@ class XMLParser:
         uuid = self._get_uuid(configuration)
         name_obj = self._get_property(configuration, 'Name')[0]
         name = name_obj.text
+
+        properties = self._read_properties(configuration)
 
         child_objs = self._get_childs(configuration)
 
@@ -38,7 +51,7 @@ class XMLParser:
                 line_number=child_obj.sourceline
             ))
 
-        return uuid, childes, name
+        return uuid, childes, name, properties
 
     def parse_object(self):
 
@@ -49,6 +62,7 @@ class XMLParser:
             forms=list(),
             templates=list(),
             commands=list(),
+            others=list()
         )
         uuid = self._get_uuid(obj)
         child_objs = self._get_childs(obj)
@@ -62,7 +76,9 @@ class XMLParser:
         for child_obj in child_objs:
             self.set_child_by_tag(childes, child_obj)
 
-        return uuid, childes, name_obj.sourceline
+        properties = self._read_properties(obj)
+
+        return uuid, childes, name_obj.sourceline,
 
     def set_child_by_tag(self, childes: Dict[str, list], obj: ElementTree):
         tag = QName(obj).localname
@@ -72,9 +88,13 @@ class XMLParser:
             pass
         elif tag == 'Command':
             pass
+        elif tag in ['Recalculation', 'Table', 'Cube', 'Function']:
+            pass
+
         elif tag in ['Attribute', 'Operation', 'Column',
                      'EnumValue', 'Resource', 'Dimension',
-                     'AccountingFlag', 'ExtDimensionAccountingFlag', 'AddressingAttribute']:
+                     'AccountingFlag', 'ExtDimensionAccountingFlag',
+                     'AddressingAttribute']:
             childes['attributes'].append(self._parse_attr_child(obj))
         elif tag in ['TabularSection', 'URLTemplate']:
             tabular_data = self._parse_attr_child(obj)

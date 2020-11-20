@@ -1,6 +1,9 @@
 from typing import List, Dict, Union
 import enum
 from os import path
+from abc import ABC, abstractmethod
+
+from mdclasses.Module import Module, create_module
 
 
 class ObjectType(enum.Enum):
@@ -61,7 +64,19 @@ class ObjectType(enum.Enum):
     CUBE = 'Cube'
 
 
-class Supportable:
+class Serializable(ABC):
+
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls, args, kwargs):
+        pass
+    
+
+class Supportable(Serializable):
 
     def __init__(self, uuid: str = ''):
         self.uuid = uuid
@@ -73,16 +88,6 @@ class Supportable:
         except KeyError:
             self.support_type = SupportType.NONE_SUPPORT
 
-    def to_dict(self):
-        return dict(
-            uuid=self.uuid,
-            support_type=self.support_type.value
-        )
-
-    def from_dict(self, data, parent):
-        self.uuid = data['uuid']
-        self.set_support(data['support_type'])
-
     @property
     def on_support(self) -> bool:
         return self.support_type in [
@@ -90,6 +95,21 @@ class Supportable:
             SupportType.EDITABLE_SUPPORT_ENABLED,
             SupportType.NOT_SUPPORTED
         ]
+    
+    def to_dict(self):
+        return dict(
+            uuid=self.uuid,
+            support_type=self.support_type.value
+        )
+
+    @classmethod
+    def from_dict(cls, *args, **kwargs):
+        data = args[0] if 'data' not in kwargs else kwargs['data']
+
+        obj = cls(data['uuid']) if 'obj' not in kwargs else kwargs['obj']
+
+        obj.uuid = data['uuid']
+        obj.set_support(data['support_type'])
 
 
 class ConfObject(Supportable):
@@ -101,6 +121,8 @@ class ConfObject(Supportable):
 
         self.parent = parent
         self.name = name
+
+        self.modules: List[Module] = list()
 
         if isinstance(obj_type, str):
             self.obj_type = ObjectType(obj_type)
@@ -186,6 +208,7 @@ class ConfObject(Supportable):
             line_number=data['line_number'],
             obj_type=data['obj_type'],
         )
+
         obj.uuid = data['uuid'],
         obj.set_childes(data)
         return obj
@@ -299,7 +322,7 @@ class Configuration(Supportable):
         return data
 
     @classmethod
-    def from_dict(cls, data, parent: Union['ConfObject', 'ObjectAttribute']):
+    def from_dict(cls, data):
         conf = cls(
             uuid=data['uuid'],
             name=data['name'],
@@ -328,6 +351,8 @@ def resolve_path(obj_type: ObjectType, name: str = '') -> str:
         result = f'ChartsOfAccounts/{name}.xml'
     elif obj_type == ObjectType.BUSINESS_PROCESS:
         result = f'BusinessProcesses/{name}.xml'
+    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
+        result = f'ChartsOfCalculationTypes/{name}.xml'
     else:
         result = f'{obj_type.value}s/{name}.xml'
 
