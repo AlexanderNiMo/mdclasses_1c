@@ -156,6 +156,9 @@ class ConfObject(Supportable):
         root_path = Path(self.root_path)
         ext_path = root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
 
+        if not ext_path.exists():
+            return
+
         parser = ModuleParser()
 
         for element in ext_path.iterdir():
@@ -169,6 +172,9 @@ class ConfObject(Supportable):
         root_path = Path(self.root_path)
 
         forms_path = root_path.joinpath(resolve_form_path(self.obj_type, self.name)).absolute()
+
+        if not forms_path.exists():
+            return
 
         forms = {}
 

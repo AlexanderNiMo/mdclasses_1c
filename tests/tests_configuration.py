@@ -105,6 +105,20 @@ class TestConfiguration(case.TestCase):
 
         self.assertIsInstance(doc.forms[0].module, Module, 'Модуль не прочитан')
 
+    def read_empty_form(self):
+        conf_path = Path(test_data_root).absolute()
+        conf = read_configuration(conf_path)
+
+        filter = conf.get_object('HTTPСервис1', ObjectType.HTTP_SERVICE)
+        filter.read_forms()
+
+
+    def read_empty_module(self):
+        conf_path = Path(test_data_root).absolute()
+        conf = read_configuration(conf_path)
+
+        filter = conf.get_object('КритерийОтбора1', ObjectType.FILTER_CRITERION)
+        filter.read_modules()
 
     def test_read_all_configuration(self):
         conf_path = Path(test_data_root).absolute()
