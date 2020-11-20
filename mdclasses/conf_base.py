@@ -1,9 +1,11 @@
 from typing import List, Dict, Union
 import enum
 from os import path
+from pathlib import Path
 from abc import ABC, abstractmethod
 
-from mdclasses.Module import Module, create_module
+from mdclasses.Module import Module, create_module, ModuleParser
+from mdclasses.Form import Form
 
 
 class ObjectType(enum.Enum):
@@ -129,7 +131,7 @@ class ConfObject(Supportable):
         else:
             self.obj_type = obj_type
 
-        self.forms = list()
+        self.forms: List[Form] = list()
         self.templates = list()
         self.commands = list()
         self.attributes: List[ObjectAttribute] = list()
@@ -149,6 +151,45 @@ class ConfObject(Supportable):
     @property
     def relative_path(self):
         return resolve_path(self.obj_type, self.name)
+
+    def read_modules(self):
+        root_path = Path(self.root_path)
+        ext_path = root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
+
+        parser = ModuleParser()
+
+        for element in ext_path.iterdir():
+            if element.is_file() and element.suffix == '.bsl':
+                text = element.read_text('utf-8-sig')
+                self.modules.append(create_module(parser, text))
+
+    def read_forms(self):
+        self.forms = []
+
+        root_path = Path(self.root_path)
+
+        forms_path = root_path.joinpath(resolve_form_path(self.obj_type, self.name)).absolute()
+
+        forms = {}
+
+        for element in forms_path.iterdir():
+            if element.is_file() and element.suffix == '.xml':
+                name = element.stem
+                if name in forms:
+                    forms[name]['description_path'] = element
+                else:
+                    forms[name] = dict(description_path=element, structure_path='')
+            elif element.is_dir():
+                struct_path = element.joinpath('Ext', 'Form', 'Form.xml')
+                name = element.stem
+                if name in forms:
+                    forms[name]['structure_path'] = struct_path
+                else:
+                    forms[name] = dict(description_path='', structure_path=struct_path)
+
+        self.forms.extend(
+            [Form(**v) for v in forms.values()]
+        )
 
     def set_support(self, support: dict):
 
@@ -357,3 +398,52 @@ def resolve_path(obj_type: ObjectType, name: str = '') -> str:
         result = f'{obj_type.value}s/{name}.xml'
 
     return result
+
+
+def resolve_ext_path(obj_type: ObjectType, name: str = '') -> str:
+    if obj_type == ObjectType.CONFIGURATION:
+        result = ''
+    elif obj_type == ObjectType.FILTER_CRITERION:
+        result = f'FilterCriteria/{name}'
+    elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
+        result = f'ChartsOfCharacteristicTypes/{name}'
+    elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
+        result = f'ChartsOfAccounts/{name}'
+    elif obj_type == ObjectType.BUSINESS_PROCESS:
+        result = f'BusinessProcesses/{name}'
+    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
+        result = f'ChartsOfCalculationTypes/{name}'
+    else:
+        result = f'{obj_type.value}s/{name}'
+
+    return f'{result}/Ext'
+
+def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
+    types_without_forms = [
+        ObjectType.CONFIGURATION,
+        ObjectType.COMMAND_GROUP,
+        ObjectType.COMMON_MODULE,
+        ObjectType.COMMON_ATTRIBUTE,
+        ObjectType.COMMON_PICTURE,
+        ObjectType.COMMON_TEMPLATE
+    ]
+    if obj_type in types_without_forms:
+        raise ValueError(f'У объекта типа {obj_type} нет форм!')
+    elif obj_type == ObjectType.CONSTANT:
+        result = f'CommonForms/ФормаКонстант'
+    elif obj_type == ObjectType.COMMON_FORM:
+        result = f'CommonForms/{name}'
+    elif obj_type == ObjectType.FILTER_CRITERION:
+        result = f'FilterCriteria/Forms/{name}'
+    elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
+        result = f'ChartsOfCharacteristicTypes/Forms/{name}'
+    elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
+        result = f'ChartsOfAccounts/Forms/{name}'
+    elif obj_type == ObjectType.BUSINESS_PROCESS:
+        result = f'BusinessProcesses/Forms/{name}'
+    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
+        result = f'ChartsOfCalculationTypes/Forms/{name}'
+    else:
+        result = f'{obj_type.value}s/{name}/Forms'
+
+    return f'{result}'

@@ -82,6 +82,30 @@ class TestConfiguration(case.TestCase):
             Path(json_report_path).read_text(encoding=encoding),
             'Объект не верно сериализован')
 
+    def test_read_obj_module(self):
+        conf_path = Path(test_data_root).absolute()
+
+        conf = create_configuration(conf_path)
+        read_configuration_objects(conf)
+
+        doc = conf.get_object('Документ1', ObjectType.DOCUMENT)
+        doc.read_modules()
+
+        self.assertEqual(len(doc.modules), 2, 'не все модули были прочитаны.')
+
+    def test_read_forms(self):
+        conf_path = Path(test_data_root).absolute()
+
+        conf = create_configuration(conf_path)
+        read_configuration_objects(conf)
+
+        doc = conf.get_object('Документ1', ObjectType.DOCUMENT)
+        doc.read_forms()
+        self.assertEqual(len(doc.forms), 1, 'не все формы были прочитаны.')
+
+        self.assertIsInstance(doc.forms[0].module, Module, 'Модуль не прочитан')
+
+
     def test_read_all_configuration(self):
         conf_path = Path(test_data_root).absolute()
         read_configuration(conf_path)
