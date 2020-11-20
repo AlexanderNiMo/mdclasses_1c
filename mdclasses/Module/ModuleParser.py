@@ -116,7 +116,7 @@ class ModuleParser:
 
             sub_programm.add_data('preproc', preproc)
 
-            if data['ExtensionParam'] == '' or data['Preproc'] is None:
+            if data['ExtensionParam'] == '' or data['ExtensionParam'] is None:
                 extension = None
             else:
                 extension = self.ExtensionDefenition.search(data['ExtensionParam']).groupdict()

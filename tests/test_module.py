@@ -32,6 +32,8 @@ class TestModuleParser(case.TestCase):
 
         self.assertEqual(module.name, module_path.stem, 'Имя модуля определено не корректно')
 
+        self.assertIsNotNone(module.elements[6].elements[15].elements[7].expansion_modifier, 'Не корректно определены модификаторы подпрограммы')
+
     def emulate_change_module_element(self, element: ModuleElement):
         result = True
 
