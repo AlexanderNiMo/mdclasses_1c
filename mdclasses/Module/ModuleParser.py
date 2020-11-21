@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 
 class ModuleParser:
@@ -359,7 +359,7 @@ class ModuleBlock:
 
         self.__aditional_data = {}
 
-    def add_data(self, name: str, data: dict):
+    def add_data(self, name: str, data: Union[dict, str]):
         self.__aditional_data[name] = data
 
     def add_text(self, text, to_the_begining=False):

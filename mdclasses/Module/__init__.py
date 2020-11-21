@@ -1,2 +1,1 @@
-from .Module import Module, create_module
-from .ModuleParser import ModuleParser, ModuleBlock
+from .Module import Module, TextData, create_module

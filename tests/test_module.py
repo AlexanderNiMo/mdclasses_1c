@@ -2,21 +2,22 @@ from unittest import case
 from pathlib import Path
 
 from mdclasses.Module.Module import (create_module, ModuleParser, TextData,
-                                     Region, Function, Procedure, PreprocessorInstruction, ModuleElement)
+                                     Region, Function, Procedure, PreprocessorInstruction, ModuleElement, Module)
 
 
-test_module = './test_data/module/Module.bsl'
+test_module = './test_data/module/TestModule.bsl'
 
 
 class TestModuleParser(case.TestCase):
 
-    def test_parse_module(self):
-
+    def get_test_module(self) -> Module:
         module_path = Path(test_module).absolute()
         parser = ModuleParser()
+        return create_module(parser, module_path)
 
-        module = create_module(parser, module_path)
-        text = module_path.read_text('utf-8-sig')
+    def test_parse_module(self):
+        module = self.get_test_module()
+        text = module._path.read_text('utf-8-sig')
 
         types = [TextData, Region, Function, Procedure, PreprocessorInstruction]
 
@@ -30,14 +31,13 @@ class TestModuleParser(case.TestCase):
 
         self.assertEqual(text, module_text, 'Сгенерированный текст модуля должен быть идентичен исходному!')
 
-        self.assertEqual(module.name, module_path.stem, 'Имя модуля определено не корректно')
+        self.assertEqual(module.name, module._path.stem, 'Имя модуля определено не корректно')
 
-        self.assertIsNotNone(module.elements[6].elements[15].elements[7].expansion_modifier, 'Не корректно определены модификаторы подпрограммы')
+        self.assertIsNotNone(module.elements[6].elements[15].elements[7].expansion_modifier,
+                             'Не корректно определены модификаторы подпрограммы')
 
     def test_find_sub_program(self):
-        module_path = Path(test_module).absolute()
-        parser = ModuleParser()
-        module = create_module(parser, module_path)
+        module = self.get_test_module()
 
         sub_prog = module.find_sub_program('СообщитьПользователю')
 
@@ -71,5 +71,16 @@ class TestModuleParser(case.TestCase):
 
         return result
 
+    def test_update_subprogramm(self):
 
+        module = self.get_test_module()
 
+        func = module.find_sub_program('ЗначенияРеквизитовОбъекта')
+        last_element = func.elements[-1]
+        new_line = '\taбырвалг = 1; \n'
+        text_element = TextData(new_line, last_element.text_range.end_line+1, last_element.text_range.end_line+2)
+
+        func.add_sub_element(text_element)
+
+        module_text = module.text
+        self.assertIn(new_line, module_text, 'не обнаруженна добавленная строка!')

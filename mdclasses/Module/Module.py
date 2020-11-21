@@ -382,13 +382,14 @@ class Module(Subordinates):
 
     @classmethod
     def from_data(cls, data: ModuleBlock):
-        return cls(data.text, data.start, data.end)
+        aditional_data = data.get_data()
+        return cls(aditional_data['name'], aditional_data['path'], data.text, data.start, data.end)
 
-    def __init__(self, text: str, start: int, end: int, elements: Optional[List[ModuleElement]] = None):
+    def __init__(self, name: str, path: pathlib.Path, text: str, start: int, end: int, elements: Optional[List[ModuleElement]] = None):
         super(Module, self).__init__(start=start, end=end, elements=elements, text=text)
 
-        self.name = ''
-        self.path: Optional[pathlib.Path] = None
+        self._name: str = name
+        self._path: pathlib.Path = path
 
         self.__procedures: Optional[Dict[str, Procedure]] = None
         self.__functions: Optional[Dict[str, Function]] = None
@@ -396,6 +397,10 @@ class Module(Subordinates):
     @property
     def text(self):
         return super(Subordinates, self).text
+
+    @property
+    def name(self):
+        return self._name
 
     def _get_text(self):
         return '\n'.join(e.text for e in self.elements)
@@ -449,16 +454,17 @@ class Module(Subordinates):
                 yield element
 
     def save_to_file(self):
-        self.path.write_text(self.text, 'utf-8-sig')
+        self._path.write_text(self.text, 'utf-8-sig')
 
 
 def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
     module_text = module_path.read_text('utf-8-sig')
 
     block = parser.parse_module_text(module_text)
+    block.add_data('name', module_path.stem)
+    block.add_data('path', module_path)
+
     module = Module.from_data(block)
-    module.name = module_path.stem
-    module.path = module_path
 
     for element in block.sub_elements:
         module.elements.append(_create_module_element(element))
