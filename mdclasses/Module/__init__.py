@@ -1,1 +1,1 @@
-from .Module import Module, TextData, create_module
+from .Module import Module, create_module, TextData
