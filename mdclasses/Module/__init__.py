@@ -1,2 +1,2 @@
-from .Module import Module, create_module, TextData
+from .Module import Module, create_module, TextData, Procedure
 from .ModuleParser import ModuleParser

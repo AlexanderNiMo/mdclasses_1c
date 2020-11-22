@@ -5,13 +5,13 @@ from mdclasses.Module.Module import (create_module, ModuleParser, TextData,
                                      Region, Function, Procedure, PreprocessorInstruction, ModuleElement, Module)
 
 
-test_module = './test_data/module/TestModule.bsl'
+test_module = './test_data/module'
 
 
 class TestModuleParser(case.TestCase):
 
-    def get_test_module(self) -> Module:
-        module_path = Path(test_module).absolute()
+    def get_test_module(self, module_name='TestModule.bsl') -> Module:
+        module_path = Path(test_module).joinpath(module_name).absolute()
         parser = ModuleParser()
         return create_module(parser, module_path)
 
@@ -84,3 +84,20 @@ class TestModuleParser(case.TestCase):
 
         module_text = module.text
         self.assertIn(new_line, module_text, 'не обнаруженна добавленная строка!')
+
+    def test_module_variable(self):
+        module = self.get_test_module('VariableModule.bsl')
+
+        self.assertEqual(
+            '#Область Переменные\n\nПерем ААА;\nПерем ИИ;\n\n#КонецОбласти\n',
+            module.module_variables_text,
+            'Не верно рассчитан текст переменных модуля'
+        )
+
+        module = self.get_test_module()
+
+        self.assertEqual(
+            '',
+            module.module_variables_text,
+            'Не верно рассчитан текст переменных модуля'
+        )

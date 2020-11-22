@@ -402,6 +402,41 @@ class Module(Subordinates):
     def name(self):
         return self._name
 
+    @property
+    def file_name(self) -> pathlib.Path:
+        return self._path
+
+    @property
+    def module_variables_text(self):
+        variables_elements = []
+        for element in self.elements:
+            if self.__have_sub_procedure(element):
+                break
+            variables_elements.append(element)
+        module_variables_text = '\n'.join(e.text for e in variables_elements)
+        if 'Перем '.upper() in module_variables_text.upper():
+            return module_variables_text
+        else:
+            return ''
+
+    @property
+    def module_main_text(self):
+        if self.module_variables_text == '':
+            return self.text
+        i = 0
+        for i, element in enumerate(self.elements):
+            if self.__have_sub_procedure(element):
+                break
+
+        return '\n'.join(e.text for e in self.elements[i:])
+
+    def __have_sub_procedure(self, element: ModuleElement):
+        if isinstance(element, SubProgram):
+            return True
+        if isinstance(element, Subordinates):
+            return not all([not self.__have_sub_procedure(e) for e in element.elements])
+        return False
+
     def _get_text(self):
         return '\n'.join(e.text for e in self.elements)
 
