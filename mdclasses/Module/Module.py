@@ -123,7 +123,7 @@ class Subordinates(ModuleElement):
 
     @mutable
     def insert_sub_element(self, element: ModuleElement, index: int):
-        self.__elements.insert(element, index)
+        self.__elements.insert(index, element)
 
     @property
     def text(self):
@@ -272,6 +272,12 @@ class SubProgram(Subordinates):
         title = f'{self.SUB_PROGRAM_TYPE} {self.name}({params}) {public}'
 
         return f'{comments}{directive}{title}'
+
+    @property
+    def call_text(self):
+        params = ', '.join(v.name for v in self.params)
+
+        return f'{self.name}({params});'
 
     def _get_end_text(self):
         return self.end_text
