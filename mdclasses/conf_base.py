@@ -152,6 +152,18 @@ class ConfObject(Supportable):
     def relative_path(self):
         return resolve_path(self.obj_type, self.name)
 
+    @property
+    def obj_dir(self) -> Path:
+        return Path(self.file_name).parent
+
+    @property
+    def form_path(self):
+        return resolve_form_path(self.obj_type, self.name)
+
+    @property
+    def ext_path(self) -> Path:
+        return Path(resolve_ext_path(self.obj_type, self.name)).resolve().absolute()
+
     def read_modules(self):
         root_path = Path(self.root_path)
         ext_path = root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
