@@ -121,6 +121,10 @@ class Subordinates(ModuleElement):
     def add_sub_element(self, element: ModuleElement):
         self.__elements.append(element)
 
+    @mutable
+    def insert_sub_element(self, element: ModuleElement, index: int):
+        self.__elements.insert(element, index)
+
     @property
     def text(self):
         text = list()
