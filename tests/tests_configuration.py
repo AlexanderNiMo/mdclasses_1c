@@ -112,6 +112,15 @@ class TestConfiguration(case.TestCase):
         filter = conf.get_object('HTTPСервис1', ObjectType.HTTP_SERVICE)
         filter.read_forms()
 
+    def test_ext_path(self):
+        conf_path = Path(test_data_root).absolute()
+        conf = read_configuration(conf_path)
+
+        obj = conf.get_object('Форма', ObjectType.COMMON_FORM)
+        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.ext_path, 'Не верно определен путь ext для COMMON_FORM')
+
+        obj = conf.get_object('Перечисление1', ObjectType.ENUM)
+        self.assertEqual(conf_path.joinpath('Enums', 'Перечисление1', 'Ext'), obj.ext_path, 'Не верно определен путь ext для Enums')
 
     def read_empty_module(self):
         conf_path = Path(test_data_root).absolute()

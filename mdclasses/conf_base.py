@@ -162,11 +162,11 @@ class ConfObject(Supportable):
 
     @property
     def ext_path(self) -> Path:
-        return Path(resolve_ext_path(self.obj_type, self.name)).resolve().absolute()
+        root_path = Path(self.root_path)
+        return root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
 
     def read_modules(self):
-        root_path = Path(self.root_path)
-        ext_path = root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
+        ext_path = self.ext_path
 
         if not ext_path.exists():
             return
