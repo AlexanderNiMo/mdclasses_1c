@@ -1,8 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, List, Generator, Union
 import pathlib
+import logging
 
 from mdclasses.Module.ModuleParser import ModuleParser, ModuleBlock
+
+
+logger = logging.getLogger(__name__)
 
 
 class TextRange:
@@ -507,16 +511,20 @@ class Module(Subordinates):
 
 
 def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
-    module_text = module_path.read_text('utf-8-sig')
+    try:
+        module_text = module_path.read_text('utf-8-sig')
 
-    block = parser.parse_module_text(module_text)
-    block.add_data('name', module_path.stem)
-    block.add_data('path', module_path)
+        block = parser.parse_module_text(module_text)
+        block.add_data('name', module_path.stem)
+        block.add_data('path', module_path)
 
-    module = Module.from_data(block)
+        module = Module.from_data(block)
 
-    for element in block.sub_elements:
-        module.elements.append(_create_module_element(element))
+        for element in block.sub_elements:
+            module.elements.append(_create_module_element(element))
+    except Exception as ex:
+        logger.error(f'Ошибка создания модуля из файла по пут {module_path}')
+        raise ex
 
     return module
 
