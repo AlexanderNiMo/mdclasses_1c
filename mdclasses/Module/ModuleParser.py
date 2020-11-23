@@ -7,7 +7,7 @@ class ModuleParser:
     RegionDataRegExp = re.compile(r'^( |\t)*#Область\s*(?P<region_name>.*$)', flags=re.MULTILINE | re.IGNORECASE)
 
     PreprocessorDataRegExp = re.compile(
-        r'^( |\t)*#Если\s*(?P<preprocessor_type>[А-Яа-я]*)\sТогда',
+        r'^( |\t)*#Если\s*(?P<preprocessor_type>[А-Яа-я \t]*)\s*Тогда',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
@@ -51,7 +51,7 @@ class ModuleParser:
         try:
             if block.block_type == 'preprocessor':
                 data = self.PreprocessorDataRegExp.search(block.text).groupdict()
-                block.add_data('preprocessor_type', data['preprocessor_type'])
+                block.add_data('preprocessor_type', data['preprocessor_type'].strip())
             elif block.block_type == 'region':
                 data = self.RegionDataRegExp.search(block.text).groupdict()
                 block.add_data('name', data['region_name'])

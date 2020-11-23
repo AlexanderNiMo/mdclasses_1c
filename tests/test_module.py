@@ -101,3 +101,12 @@ class TestModuleParser(case.TestCase):
             module.module_variables_text,
             'Не верно рассчитан текст переменных модуля'
         )
+
+    def test_multy_compilation_directive(self):
+        module = self.get_test_module('MultyCompilationDirective.bsl')
+
+        self.assertEqual(
+            module.elements[1].elements[1].instruction_type,
+            'Сервер Или ТолстыйКлиентОбычноеПриложение Или ВнешнееСоединение',
+            'Не верно определена инструкция!'
+        )
