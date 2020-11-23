@@ -158,7 +158,8 @@ class ConfObject(Supportable):
 
     @property
     def form_path(self):
-        return resolve_form_path(self.obj_type, self.name)
+        root_path = Path(self.root_path)
+        return root_path.joinpath(resolve_form_path(self.obj_type, self.name))
 
     @property
     def ext_path(self) -> Path:
@@ -447,9 +448,9 @@ def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
     if obj_type in types_without_forms:
         raise ValueError(f'У объекта типа {obj_type} нет форм!')
     elif obj_type == ObjectType.CONSTANT:
-        result = f'CommonForms/ФормаКонстант'
+        result = f'CommonForms/ФормаКонстант/Ext'
     elif obj_type == ObjectType.COMMON_FORM:
-        result = f'CommonForms/{name}'
+        result = f'CommonForms/{name}/Ext'
     elif obj_type == ObjectType.FILTER_CRITERION:
         result = f'FilterCriteria/Forms/{name}'
     elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:

@@ -122,6 +122,16 @@ class TestConfiguration(case.TestCase):
         obj = conf.get_object('Перечисление1', ObjectType.ENUM)
         self.assertEqual(conf_path.joinpath('Enums', 'Перечисление1', 'Ext'), obj.ext_path, 'Не верно определен путь ext для Enums')
 
+    def test_form_path(self):
+        conf_path = Path(test_data_root).absolute()
+        conf = read_configuration(conf_path)
+
+        obj = conf.get_object('Форма', ObjectType.COMMON_FORM)
+        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.form_path, 'Не верно определен путь ext для COMMON_FORM')
+
+        obj = conf.get_object('Документ1', ObjectType.DOCUMENT)
+        self.assertEqual(conf_path.joinpath('Documents', 'Документ1', 'Forms'), obj.form_path, 'Не верно определен путь ext для Enums')
+
     def read_empty_module(self):
         conf_path = Path(test_data_root).absolute()
         conf = read_configuration(conf_path)
