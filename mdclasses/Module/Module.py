@@ -538,7 +538,12 @@ def _create_module_element(element: ModuleBlock) -> ModuleElement:
         'comment': TextData
     }
 
-    module_element = objects[element.block_type].from_data(element)
+    try:
+        module_element = objects[element.block_type].from_data(element)
+    except KeyError as ex:
+        logger.error(f'Получения класса-конструктора по типу {element.block_type} '
+                     f'Данные элемента: {element.block_type}')
+        raise ex
 
     if isinstance(module_element, Subordinates):
         for sub_block in element.sub_elements:
