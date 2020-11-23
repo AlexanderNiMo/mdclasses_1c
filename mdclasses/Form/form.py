@@ -26,6 +26,9 @@ class Form:
     def _read_module(self):
         ext_path = self.description_path.parent.joinpath(self.description_path.stem, 'Ext', 'Form')
 
+        if not ext_path.exists():
+            return
+
         parser = ModuleParser()
 
         for element in ext_path.iterdir():
