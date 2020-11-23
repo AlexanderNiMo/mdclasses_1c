@@ -48,14 +48,17 @@ class ModuleParser:
 
     def parse_block(self, block: 'ModuleBlock'):
 
-        if block.block_type == 'preprocessor':
-            data = self.PreprocessorDataRegExp.search(block.text).groupdict()
-            block.add_data('preprocessor_type', data['preprocessor_type'])
-        elif block.block_type == 'region':
-            data = self.RegionDataRegExp.search(block.text).groupdict()
-            block.add_data('name', data['region_name'])
-        elif block.block_type == 'sub_program' and not self.full_sub_program_declaration(block.text):
-            self.extend_sub_program_block(block)
+        try:
+            if block.block_type == 'preprocessor':
+                data = self.PreprocessorDataRegExp.search(block.text).groupdict()
+                block.add_data('preprocessor_type', data['preprocessor_type'])
+            elif block.block_type == 'region':
+                data = self.RegionDataRegExp.search(block.text).groupdict()
+                block.add_data('name', data['region_name'])
+            elif block.block_type == 'sub_program' and not self.full_sub_program_declaration(block.text):
+                self.extend_sub_program_block(block)
+        except AttributeError as ex:
+            raise AttributeError(f'При чтении блока типа {block.block_type} с текстом {block.text} произошла ошибка {ex}')
 
         removing_blocks = []
         block.sub_elements.reverse()
