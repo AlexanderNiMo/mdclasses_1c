@@ -139,3 +139,12 @@ class TestModuleParser(case.TestCase):
             '&НаКлиенте',
             'Не верно определена область!'
         )
+
+    def test_module_variable(self):
+        module = self.get_test_module('module_variable_text.bsl')
+
+        self.assertEqual(
+            module.elements[0].text,
+            '&НаКлиенте',
+            'Не верно определена область!'
+        )

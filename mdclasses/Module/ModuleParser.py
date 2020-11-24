@@ -12,7 +12,7 @@ class ModuleParser:
     )
 
     SubProgramDeclarationRegExp = re.compile(
-        r'(?P<Comment>(^[ \t]*\/\/(.| |\t)*$\n)*)?(?P<Preproc>(^[ \t]*&[^)(]*$\n))?(?P<ExtensionParam>(^[ \t]*&.*$\n)*)?^[ \t]*(?P<type>Процедура|Функция)[ \t]*(?P<name>[\wа-яА-Я1-9]*)\((?P<Params>(((Знач)?\s?[^,\n)]*),?\s?)+?)\)(?P<Public>[ |\t]Экспорт)?',
+        r'(?P<Comment>(^[ \t]*\/\/(.| |\t)*$\n)*)?(?P<Preproc>(^[ \t]*&[^)(]*$\n))?(?P<ExtensionParam>(^[ \t]*&.*$\n)*)?^[ \t]*(?P<type>Процедура|Функция)[ \t]*(?P<name>[\wа-яА-Я1-9]*)[ \t]*\((?P<Params>(((Знач)?\s?[^,\n)]*),?\s?)+?)\)(?P<Public>[ |\t]Экспорт)?',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
