@@ -51,8 +51,11 @@ class TestModuleParser(case.TestCase):
         with self.assertRaises(KeyError) as error:
             module.find_sub_program('СообщитьПользователю1111111')
 
-        self.assertEqual(error.exception.args[0], 'В модуле нет подпрограммы СообщитьПользователю1111111.',
-                         'Неожиданное исключение')
+        self.assertEqual(
+            error.exception.args[0],
+            'В модуле <TestModule file:/home/alex/python_/projects/Metadata_1c/tests/test_data/module/TestModule.bsl> '
+            'нет подпрограммы СообщитьПользователю1111111.',
+            'Неожиданное исключение')
 
     def emulate_change_module_element(self, element: ModuleElement):
         result = True

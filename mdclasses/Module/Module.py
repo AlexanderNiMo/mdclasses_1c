@@ -482,7 +482,9 @@ class Module(Subordinates):
         sub_proc = _find_by_name(name, self.__procedures, self.procedures())
 
         if sub_proc is None:
-            raise KeyError(f'В модуле нет подпрограммы {name}.')
+            error_msg = f'В модуле {self} нет подпрограммы {name}.'
+            logger.error(error_msg)
+            raise KeyError(error_msg)
 
         return sub_proc
 
@@ -508,6 +510,9 @@ class Module(Subordinates):
 
     def save_to_file(self):
         self._path.write_text(self.text, 'utf-8-sig')
+
+    def __repr__(self):
+        return f'<{self.name} file:{self.file_name}>'
 
 
 def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
