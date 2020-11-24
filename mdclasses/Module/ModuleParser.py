@@ -159,31 +159,31 @@ class ModuleParser:
 class TextLineParser:
 
     RegionStartRegExp = re.compile(
-        r'#Область',
+        r'^[ \t]*#Область',
         flags=re.MULTILINE | re.IGNORECASE
     )
     RegionEndRegExp = re.compile(
-        r'#КонецОбласти',
+        r'^[ \t]*#КонецОбласти',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
     PreprocessorStart = re.compile(
-        r'#Если(.*\s)',
+        r'^[ \t]*#Если(.*\s)',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
     PreprocessorEnd = re.compile(
-        r'#КонецЕсли',
+        r'^[ \t]*#КонецЕсли',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
     SubProgramStart = re.compile(
-        r'Процедура|Функция',
+        r'^[ \t]*Процедура|^[ \t]*Функция',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
     SubProgramEnd = re.compile(
-        r'КонецФункции|КонецПроцедуры',
+        r'^[ \t]*КонецФункции|^[ \t]*КонецПроцедуры',
         flags=re.MULTILINE | re.IGNORECASE
     )
 

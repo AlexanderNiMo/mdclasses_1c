@@ -110,3 +110,12 @@ class TestModuleParser(case.TestCase):
             'Сервер Или ТолстыйКлиентОбычноеПриложение Или ВнешнееСоединение',
             'Не верно определена инструкция!'
         )
+
+    def test_parse_module_with_indents(self):
+        module = self.get_test_module('test_module.bsl')
+
+        self.assertEqual(
+            module.elements[0].elements[5].name,
+            'ПередЗаписьюНаСервере',
+            'Не верно определено имя процедуры!'
+        )
