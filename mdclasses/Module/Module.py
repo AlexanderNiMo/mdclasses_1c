@@ -535,7 +535,8 @@ def _create_module_element(element: ModuleBlock) -> ModuleElement:
         'region': Region,
         'preprocessor': PreprocessorInstruction,
         'sub_program': SubProgram,
-        'comment': TextData
+        'comment': TextData,
+        'preproc': TextData
     }
 
     try:

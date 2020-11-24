@@ -148,7 +148,6 @@ class ModuleParser:
                     default_value=None if data['default'] == '' or data['default'] is None else data['default']
                 )
             )
-            f=1
 
         return params
 
