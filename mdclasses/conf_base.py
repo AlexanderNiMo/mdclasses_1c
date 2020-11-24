@@ -272,6 +272,9 @@ class ConfObject(Supportable):
         obj.set_childes(data)
         return obj
 
+    def __repr__(self):
+        return f'<ConfObject: {self.full_name}>'
+
 
 class ObjectAttribute(Supportable):
 
@@ -326,6 +329,9 @@ class ObjectAttribute(Supportable):
     @property
     def root_path(self):
         return self.parent.root_path
+
+    def __repr__(self):
+        return f'<ObjectAttribute: {self.parent}.{self.name}>'
 
 
 class Configuration(Supportable):
@@ -390,6 +396,9 @@ class Configuration(Supportable):
         )
         conf.conf_objects = [ConfObject.from_dict(obj_data, conf) for obj_data in data['conf_objects']]
         return conf
+
+    def __repr__(self):
+        return f'<Configuration: {self.name} {self.root_path}>'
 
 
 class SupportType(enum.Enum):
