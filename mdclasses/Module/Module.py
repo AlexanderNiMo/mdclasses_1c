@@ -462,13 +462,13 @@ class Module(Subordinates):
 
         def _find_by_name(proc_name: str, data: Optional[dict], gen: Generator):
             def filter_name(sub_proc: Union[Procedure, Function]) -> bool:
-                return sub_proc.name == proc_name
+                return sub_proc.name.upper() == proc_name.upper()
 
             try:
                 if data is None:
                     element = next(filter(filter_name, gen))
                 else:
-                    element = data[name]
+                    element = data[name.upper()]
             except (StopIteration, KeyError) as e:
                 element = None
 
@@ -492,21 +492,17 @@ class Module(Subordinates):
         if self.__functions is None:
             self.__functions = dict()
             for element in self.element_by_class(Function):
-                self.__functions[element.name] = element
-                yield element
-        else:
-            for element in self.__functions.values():
-                yield element
+                self.__functions[element.name.upper()] = element
+        for element in self.__functions.values():
+            yield element
 
     def procedures(self) -> Generator:
         if self.__procedures is None:
             self.__procedures = dict()
             for element in self.element_by_class(Procedure):
-                self.__procedures[element.name] = element
-                yield element
-        else:
-            for element in self.__procedures.values():
-                yield element
+                self.__procedures[element.name.upper()] = element
+        for element in self.__procedures.values():
+            yield element
 
     def save_to_file(self):
         self._path.write_text(self.text, 'utf-8-sig')

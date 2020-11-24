@@ -48,6 +48,14 @@ class TestModuleParser(case.TestCase):
         self.assertEqual(sub_prog.name, 'МакетСуществует', 'Не верно найдена функция')
         self.assertIsInstance(sub_prog, Function, 'Не верно найдена функция')
 
+        sub_prog = module.find_sub_program('МАкетСущеСтвуеТ')
+        self.assertEqual(sub_prog.name, 'МакетСуществует', 'Не верно найдена функция')
+        self.assertIsInstance(sub_prog, Function, 'Не верно найдена функция')
+
+        sub_prog = module.find_sub_program('УСтановитьРабочуюДатуПользователЯ')
+        self.assertEqual(sub_prog.name, 'УстановитьРабочуюДатуПользователя', 'Не верно найдена процедура')
+        self.assertIsInstance(sub_prog, Procedure, 'Не верно найдена процедура')
+
         with self.assertRaises(KeyError) as error:
             module.find_sub_program('СообщитьПользователю1111111')
 
