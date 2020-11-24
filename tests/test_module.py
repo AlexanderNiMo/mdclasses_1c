@@ -148,3 +148,16 @@ class TestModuleParser(case.TestCase):
             '&НаКлиенте',
             'Не верно определена область!'
         )
+
+    def test_module_match(self):
+        parser = ModuleParser()
+
+        module_path = Path('./test_data/config/Catalogs/Справочник1/Ext/ObjectModule.bsl').resolve()
+        module1 = create_module(parser, module_path)
+
+        module_path = Path('./test_data/config/Catalogs/Справочник2/Ext/ObjectModule.bsl').resolve()
+        module2 = create_module(parser, module_path)
+
+        self.assertTrue(not module1.match(module2), 'Модули не соответствуют.')
+
+        return

@@ -507,6 +507,9 @@ class Module(Subordinates):
     def save_to_file(self):
         self._path.write_text(self.text, 'utf-8-sig')
 
+    def match(self, other: 'Module'):
+        return self.file_name.parts[-5:] == other.file_name.parts[-5:]
+
     def __repr__(self):
         return f'<{self.name} file:{self.file_name}>'
 
