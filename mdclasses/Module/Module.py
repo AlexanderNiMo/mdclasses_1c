@@ -401,9 +401,10 @@ class Module(Subordinates):
     @classmethod
     def from_data(cls, data: ModuleBlock):
         aditional_data = data.get_data()
-        return cls(aditional_data['name'], aditional_data['path'], data.text, data.start, data.end)
+        return cls(aditional_data['name'], aditional_data['path'],
+                   data.text, data.start, data.end, parent=aditional_data['parent'])
 
-    def __init__(self, name: str, path: pathlib.Path, text: str, start: int, end: int, elements: Optional[List[ModuleElement]] = None):
+    def __init__(self, name: str, path: pathlib.Path, text: str, start: int, end: int, elements: Optional[List[ModuleElement]] = None, parent=None):
         super(Module, self).__init__(start=start, end=end, elements=elements, text=text)
 
         self._name: str = name
@@ -411,6 +412,8 @@ class Module(Subordinates):
 
         self.__procedures: Optional[Dict[str, Procedure]] = None
         self.__functions: Optional[Dict[str, Function]] = None
+
+        self.parent = parent
 
     @property
     def text(self):
@@ -508,19 +511,23 @@ class Module(Subordinates):
         self._path.write_text(self.text, 'utf-8-sig')
 
     def match(self, other: 'Module'):
-        return self.file_name.parts[-5:] == other.file_name.parts[-5:]
+        if self.parent is None or other.parent is None:
+            return self.file_name.parts[-4:] == other.file_name.parts[-4:]
+        else:
+            return self.parent.full_name == other.parent.full_name and self.name == other.name
 
     def __repr__(self):
         return f'<{self.name} file:{self.file_name}>'
 
 
-def create_module(parser: ModuleParser, module_path: pathlib.Path) -> Module:
+def create_module(parser: ModuleParser, module_path: pathlib.Path, parent=None) -> Module:
     try:
         module_text = module_path.read_text('utf-8-sig')
 
         block = parser.parse_module_text(module_text)
         block.add_data('name', module_path.stem)
         block.add_data('path', module_path)
+        block.add_data('parent', parent)
 
         module = Module.from_data(block)
 

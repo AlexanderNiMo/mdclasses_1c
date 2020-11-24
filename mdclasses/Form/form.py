@@ -23,6 +23,11 @@ class Form:
 
         self._read_module()
 
+
+    @property
+    def full_name(self):
+        return f'form.{self.name}'
+
     def _read_module(self):
         ext_path = self.description_path.parent.joinpath(self.description_path.stem, 'Ext', 'Form')
 
@@ -33,7 +38,7 @@ class Form:
 
         for element in ext_path.iterdir():
             if element.is_file() and element.suffix == '.bsl':
-                self.module = create_module(parser, element)
+                self.module = create_module(parser, element, self)
 
     def read_structure(self):
         pass

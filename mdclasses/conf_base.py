@@ -176,7 +176,7 @@ class ConfObject(Supportable):
 
         for element in ext_path.iterdir():
             if element.is_file() and element.suffix == '.bsl':
-                self.modules.append(create_module(parser, element))
+                self.modules.append(create_module(parser, element, self))
 
     def read_forms(self):
         self.forms = []
