@@ -293,8 +293,8 @@ class SubProgram(Subordinates):
     @classmethod
     def from_data(cls, data: ModuleBlock):
         objects = {
-            'Функция': Function,
-            'Процедура': Procedure,
+            'Функция'.upper(): Function,
+            'Процедура'.upper(): Procedure,
         }
         additional_data = data.get_data()
 
@@ -324,7 +324,7 @@ class SubProgram(Subordinates):
             end_text=additional_data['ent_text']
         )
 
-        return objects[additional_data['type']](**prog_data)
+        return objects[additional_data['type'].upper()](**prog_data)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}> {self.__name}'
