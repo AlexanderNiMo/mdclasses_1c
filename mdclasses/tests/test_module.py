@@ -5,7 +5,7 @@ from mdclasses.Module.Module import (create_module, ModuleParser, TextData,
                                      Region, Function, Procedure, PreprocessorInstruction, ModuleElement, Module)
 
 
-test_module = './test_data/module'
+test_module = Path(Path(__file__).parent).joinpath('test_data', 'module')
 
 
 class TestModuleParser(case.TestCase):
@@ -61,7 +61,7 @@ class TestModuleParser(case.TestCase):
 
         self.assertEqual(
             error.exception.args[0],
-            'В модуле <TestModule file:/home/alex/python_/projects/Metadata_1c/tests/test_data/module/TestModule.bsl> '
+            'В модуле <TestModule file:/home/alex/python_/projects/Metadata_1c/mdclasses/tests/test_data/module/TestModule.bsl> '
             'нет подпрограммы СообщитьПользователю1111111.',
             'Неожиданное исключение')
 
@@ -140,24 +140,16 @@ class TestModuleParser(case.TestCase):
             'Не верно определена область!'
         )
 
-    def test_module_variable(self):
-        module = self.get_test_module('module_variable_text.bsl')
-
-        self.assertEqual(
-            module.elements[0].text,
-            '&НаКлиенте',
-            'Не верно определена область!'
-        )
-
     def test_module_match(self):
         parser = ModuleParser()
 
-        module_path = Path('./test_data/config/Catalogs/Справочник1/Ext/ObjectModule.bsl').resolve()
+        module_path = Path(Path(__file__).parent).joinpath('test_data', 'config', 'Catalogs', 'Справочник1', 'Ext',
+                                                           'ObjectModule.bsl').resolve()
         module1 = create_module(parser, module_path)
 
-        module_path = Path('./test_data/config/Catalogs/Справочник2/Ext/ObjectModule.bsl').resolve()
+        module_path = Path(Path(__file__).parent).joinpath('test_data', 'config', 'Catalogs', 'Справочник2', 'Ext',
+                                                           'ObjectModule.bsl').resolve()
         module2 = create_module(parser, module_path)
 
         self.assertTrue(not module1.match(module2), 'Модули не соответствуют.')
 
-        return

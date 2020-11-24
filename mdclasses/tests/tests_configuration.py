@@ -5,9 +5,9 @@ from json import dumps, load
 from mdclasses.builder import create_configuration, read_configuration_objects, read_configuration
 from mdclasses import ObjectType, ConfObject, Configuration, Module
 
-test_data_root = './test_data/config'
-json_report_path = './test_data/json_data/report.json'
-json_config_path = './test_data/json_data/configuration_not_full.json'
+test_data_root = Path(Path(__file__).parent).joinpath('test_data', 'config')
+json_report_path = Path(Path(__file__).parent).joinpath('test_data', 'json_data', 'report.json')
+json_config_path = Path(Path(__file__).parent).joinpath('test_data', 'json_data', 'configuration_not_full.json')
 
 encoding = 'utf-8'
 
