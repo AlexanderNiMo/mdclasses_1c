@@ -131,6 +131,16 @@ class TestModuleParser(case.TestCase):
             'Не верно определено имя процедуры!'
         )
 
+        self.assertIsNotNone(
+            module.elements[2].elements[4].expansion_modifier,
+            'Не определено описание расширения'
+        )
+
+        self.assertIsNotNone(
+            module.elements[2].elements[8].compilation_directive,
+            'Не верно определена директива препроцессора.'
+        )
+
     def test_module_variable(self):
         module = self.get_test_module('module_variable_text.bsl')
 

@@ -11,8 +11,14 @@ class ModuleParser:
         flags=re.MULTILINE | re.IGNORECASE
     )
 
-    SubProgramDeclarationRegExp = re.compile(
-        r'(?P<Comment>(^[ \t]*\/\/(.| |\t)*$\n)*)?(?P<Preproc>(^[ \t]*&[^)(]*$\n))?(?P<ExtensionParam>(^[ \t]*&.*$\n)*)?^[ \t]*(?P<type>Процедура|Функция)[ \t]*(?P<name>[\wа-яА-Я1-9]*)[ \t]*\((?P<Params>(((Знач)?\s?[^,\n)]*),?\s?)+?)\)(?P<Public>[ |\t]Экспорт)?',
+    SubProgram_Declaration_Call_regExp = re.compile(
+        r'^[ \t]*(?P<type>Процедура|Функция)[ \t]*(?P<name>[\wа-яА-Я1-9]*)[ \t]*'
+        r'\((?P<Params>(((Знач)?\s?[^,\n)]*),?\s?)+?)\)(?P<Public>[ |\t]*Экспорт)?',
+        flags=re.MULTILINE | re.IGNORECASE
+    )
+
+    Comment_RegExp = re.compile(
+        r'(?P<Comment>(^[ \t]*\/\/.*$\n{0,1})+)',
         flags=re.MULTILINE | re.IGNORECASE
     )
 
@@ -106,30 +112,32 @@ class ModuleParser:
     def parse_sub_programs(self, block):
         for sub_programm in block.blocks_by_type('sub_program'):
 
-            data = self.SubProgramDeclarationRegExp.search(sub_programm.text).groupdict()
+            data = self.SubProgram_Declaration_Call_regExp.search(sub_programm.text).groupdict()
 
             sub_programm.add_data('name', data['name'])
             sub_programm.add_data('type', data['type'])
-            sub_programm.add_data('comment', data['Comment'])
-
-            if data['Preproc'] == '' or data['Preproc'] is None:
-                preproc = None
-            else:
-                preproc = self.Directive.search(data['Preproc']).groupdict()
-
-            sub_programm.add_data('preproc', preproc)
-
-            if data['ExtensionParam'] == '' or data['ExtensionParam'] is None:
-                extension = None
-            else:
-                extension = self.ExtensionDefenition.search(data['ExtensionParam']).groupdict()
-
-            sub_programm.add_data('extension', extension)
 
             params = self.parse_param_text(data['Params'])
             sub_programm.add_data('params', params)
-
             sub_programm.add_data('public', False if data['Public'] == '' or data['Public'] is None else True)
+
+            comment = self.Comment_RegExp.search(sub_programm.text)
+            if comment is not None:
+                comment = comment.groupdict()['Comment']
+
+            sub_programm.add_data('comment', comment)
+
+            preproc = self.Directive.search(sub_programm.text)
+
+            if preproc is not None:
+                preproc = preproc.groupdict()
+            sub_programm.add_data('preproc', preproc)
+
+            extension = self.ExtensionDefenition.search(sub_programm.text)
+
+            if extension is not None:
+                extension = extension.groupdict()
+            sub_programm.add_data('extension', extension)
 
     def parse_param_text(self, param_text: str) -> List[Dict[str, str]]:
 
