@@ -68,15 +68,15 @@ class XMLParser:
         child_objs = self._get_childs(obj)
         name_obj = self._get_property(obj, 'Name')[0]
 
+        properties = self._read_properties(obj)
+
         if self.obj_type in [
             ObjectType.SUBSYSTEM,
         ]:
-            return uuid, childes, name_obj.sourceline
+            return uuid, childes, name_obj.sourceline, properties
 
         for child_obj in child_objs:
             self.set_child_by_tag(childes, child_obj)
-
-        properties = self._read_properties(obj)
 
         return uuid, childes, name_obj.sourceline, properties
 
