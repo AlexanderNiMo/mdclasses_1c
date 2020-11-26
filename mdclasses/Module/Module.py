@@ -72,7 +72,6 @@ class ModuleElement(ABC):
     def text(self) -> str:
         if self.changed:
             self.__text = self._get_text()
-            self.__changed = False
         return self.__text
 
     def _get_text(self) -> str:
