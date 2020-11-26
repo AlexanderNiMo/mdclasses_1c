@@ -4,6 +4,14 @@ from mdclasses.parser import XMLParser, SupportConfigurationParser
 from mdclasses.conf_base import ObjectType, Configuration, resolve_path
 
 
+def read_configuration(config_dir: str) -> Configuration:
+    conf = create_configuration(config_dir)
+    read_configuration_objects(conf)
+    conf.set_support(get_support_data(config_dir))
+
+    return conf
+
+
 def create_configuration(config_dir: str):
 
     config_data = path.join(config_dir, resolve_path(ObjectType.CONFIGURATION))
@@ -11,7 +19,7 @@ def create_configuration(config_dir: str):
 
     uuid, child_data, name, props = parser.parse_configuration()
 
-    return Configuration(uuid, child_data, config_dir, name)
+    return Configuration(uuid=uuid, conf_objects=child_data, root_path=config_dir, name=name, props=props)
 
 
 def get_support_data(config_dir: str):
@@ -29,16 +37,8 @@ def read_configuration_objects(conf: Configuration):
             resolve_path(conf_object.obj_type, conf_object.name)
         )
         parser = XMLParser(object_config, conf_object.obj_type)
-        conf_object.uuid, obj_childes, conf_object.line_number = parser.parse_object()
+        conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = parser.parse_object()
         conf_object.set_childes(obj_childes)
-
-
-def read_configuration(config_dir: str) -> Configuration:
-    conf = create_configuration(config_dir)
-    read_configuration_objects(conf)
-    conf.set_support(get_support_data(config_dir))
-
-    return conf
 
 
 def save_to_json(config_dir, json_path):
@@ -51,4 +51,4 @@ def save_to_json(config_dir, json_path):
 def read_from_json(json_path: str):
     with open(json_path, 'r') as f:
         data = load(f)
-        conf = Configuration.from_dict(data, None)
+        conf = Configuration.from_dict(data)

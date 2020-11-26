@@ -116,13 +116,19 @@ class Supportable(Serializable):
 
 class ConfObject(Supportable):
 
-    def __init__(self, name: str, obj_type: Union[ObjectType, str], parent: 'Configuration', line_number: int=0):
+    def __init__(self, name: str, obj_type: Union[ObjectType, str], parent: 'Configuration',
+                 line_number: int = 0, props: dict = None):
         super(ConfObject, self).__init__()
+
+        if props is None:
+            props = {}
 
         self.line_number = line_number
 
         self.parent = parent
         self.name = name
+
+        self.props = props
 
         self.modules: List[Module] = list()
 
@@ -336,7 +342,7 @@ class ObjectAttribute(Supportable):
 
 class Configuration(Supportable):
 
-    def __init__(self, uuid: str, conf_objects: List[dict], root_path: str, name: str):
+    def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: str, name: str):
         super(Configuration, self).__init__(uuid)
 
         self.name = name
@@ -350,6 +356,7 @@ class Configuration(Supportable):
             ) for conf_obj in conf_objects
         ]
         self.support_type = SupportType.NONE_SUPPORT
+        self.props = props
 
     def set_support(self, support_data: dict):
         conf_support = {}
@@ -381,7 +388,8 @@ class Configuration(Supportable):
              dict(
                 name=self.name,
                 uuid=self.uuid,
-                conf_objects=[obj.to_dict() for obj in self.conf_objects]
+                conf_objects=[obj.to_dict() for obj in self.conf_objects],
+                props=self.props
             )
         )
         return data
@@ -393,6 +401,7 @@ class Configuration(Supportable):
             name=data['name'],
             root_path='',
             conf_objects=list(),
+            props=data['props']
         )
         conf.conf_objects = [ConfObject.from_dict(obj_data, conf) for obj_data in data['conf_objects']]
         return conf
@@ -444,6 +453,7 @@ def resolve_ext_path(obj_type: ObjectType, name: str = '') -> str:
         result = f'{obj_type.value}s/{name}'
 
     return f'{result}/Ext'
+
 
 def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
     types_without_forms = [

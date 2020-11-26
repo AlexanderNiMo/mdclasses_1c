@@ -78,7 +78,7 @@ class XMLParser:
 
         properties = self._read_properties(obj)
 
-        return uuid, childes, name_obj.sourceline,
+        return uuid, childes, name_obj.sourceline, properties
 
     def set_child_by_tag(self, childes: Dict[str, list], obj: ElementTree):
         tag = QName(obj).localname

@@ -82,6 +82,9 @@ class TestConfiguration(case.TestCase):
             Path(json_report_path).read_text(encoding=encoding),
             'Объект не верно сериализован')
 
+    def test_read_props(self):
+        pass
+
     def test_read_obj_module(self):
         conf_path = Path(test_data_root).absolute()
 
