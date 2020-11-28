@@ -1,11 +1,11 @@
-from os import path
+from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 import enum
+from lxml.etree import QName, ElementTree, Element, tostring, fromstring
+from typing import Dict, List, Union
 
 from mdclasses.conf_base import ObjectType, ABCConfigParser, ABCObjectParser, ConfObject
-from lxml.etree import parse, QName, ElementTree, Element, tostring
-from typing import Dict, List, Union
 
 
 class Format(enum.Enum):
@@ -16,8 +16,8 @@ class Format(enum.Enum):
 
 class XMLParser:
 
-    def __init__(self, file: str, obj_type: ObjectType):
-        self.file = path.abspath(file)
+    def __init__(self, file: Union[str, Path], obj_type: ObjectType):
+        self.file = Path(file)
         self.obj_type = obj_type
 
     @abstractmethod
@@ -25,7 +25,7 @@ class XMLParser:
         pass
 
 
-def get_parser(file: str, obj_type: ObjectType,
+def get_parser(file: Union[str, Path], obj_type: ObjectType,
                export_type: Format = Format.CONFIGURATOR) -> Union['PureXMLConfigParser', 'PureXMLObjectParser']:
     if export_type == Format.CONFIGURATOR:
         if obj_type == ObjectType.CONFIGURATION:
@@ -38,7 +38,7 @@ def get_parser(file: str, obj_type: ObjectType,
 
 class PureXMLParser(XMLParser, ABC):
 
-    def __init__(self, file: str, obj_type: ObjectType):
+    def __init__(self, file: Union[str, Path], obj_type: ObjectType):
         super(PureXMLParser, self).__init__(file, obj_type)
         self._root = None
         self._encoding = 'utf-8'
@@ -48,12 +48,9 @@ class PureXMLParser(XMLParser, ABC):
         if self._root is not None:
             return self._root
 
-        with open(self.file, r'r', encoding=self._encoding) as f:
-            tree = parse(f)
+        tree = fromstring(self.file.read_text(encoding=self._encoding))
 
-        root = tree.getroot()
-
-        obj_tag = root.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': root.nsmap[None]})
+        obj_tag = tree.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': tree.nsmap[None]})
 
         if len(obj_tag) == 0:
             raise ValueError(f'Не найден объект по типу {self.obj_type.value} в файле {self.file}')
@@ -138,40 +135,9 @@ class PureXMLObjectParser(PureXMLParser, ABCObjectParser):
             return uuid, childes, name_obj.sourceline, properties
 
         for child_obj in child_objs:
-            self.set_child_by_tag(childes, child_obj)
+            set_child_by_tag(childes, child_obj)
 
         return uuid, childes, name_obj.sourceline, properties
-
-    def set_child_by_tag(self, childes: Dict[str, list], obj: ElementTree):
-        tag = QName(obj).localname
-        if tag == 'Form':
-            pass
-        elif tag == 'Template':
-            pass
-        elif tag == 'Command':
-            pass
-        elif tag in ['Recalculation', 'Table', 'Cube', 'Function']:
-            pass
-
-        elif tag in ['Attribute', 'Operation', 'Column',
-                     'EnumValue', 'Resource', 'Dimension',
-                     'AccountingFlag', 'ExtDimensionAccountingFlag',
-                     'AddressingAttribute']:
-            childes['attributes'].append(self._parse_attr_child(obj))
-        elif tag in ['TabularSection', 'URLTemplate']:
-            tabular_data = self._parse_attr_child(obj)
-            tabular_data['attributes'] = [self._parse_attr_child(tab_attr) for tab_attr in _get_childes(obj)]
-            childes['attributes'].append(tabular_data)
-        else:
-            raise ValueError(f'Не описан tag {tag}')
-
-    def _parse_attr_child(self, obj: ElementTree):
-        name_obj = _get_property(obj, 'Name')[0]
-        return dict(
-            uuid=_get_uuid(obj),
-            name=name_obj.text,
-            line_number=name_obj.sourceline
-        )
 
 
 class SupportConfigurationParser:
@@ -194,46 +160,45 @@ class SupportConfigurationParser:
         2 - UUID элмента 
     '''
 
-    def __init__(self, file_path: str):
-        self.file_path = file_path
+    def __init__(self, file_path: Union[str, Path]):
+        self.file_path = Path(file_path)
 
     def parse(self) -> dict:
         conf_data = {}
-        if not path.exists(self.file_path):
+        if not self.file_path.exists():
             return dict()
 
-        with open(self.file_path, r'r', encoding='utf-8-sig') as f:
-            data = f.read()
+        data = self.file_path.read_text(encoding='utf-8-sig')
 
-            file_reg_exp = re.compile(self.REG_EXP)
-            file_data = file_reg_exp.findall(data)
+        file_reg_exp = re.compile(self.REG_EXP)
+        file_data = file_reg_exp.findall(data)
 
-            cur_element = 3
-            cur_configuration = int(file_data[self.FILE_CONF_NUMBER])
+        cur_element = 3
+        cur_configuration = int(file_data[self.FILE_CONF_NUMBER])
 
-            for conf_number in range(cur_configuration):
+        for conf_number in range(cur_configuration):
 
-                conf_version = file_data[cur_element+self.CONF_VERSION_SHIFT]
-                conf_provider = file_data[cur_element+self.CONF_PROVIDER_SHIFT]
-                conf_name = file_data[cur_element+self.CONF_NAME_SHIFT].replace('"', '')
-                cur_conf_objects = int(file_data[cur_element+self.CONF_OBJECTS_SHIFT])
-                conf_objects = {}
+            conf_version = file_data[cur_element+self.CONF_VERSION_SHIFT]
+            conf_provider = file_data[cur_element+self.CONF_PROVIDER_SHIFT]
+            conf_name = file_data[cur_element+self.CONF_NAME_SHIFT].replace('"', '')
+            cur_conf_objects = int(file_data[cur_element+self.CONF_OBJECTS_SHIFT])
+            conf_objects = {}
 
-                for object_num in range(
-                        cur_element + 1 + self.CONF_OBJECTS_SHIFT,
-                        cur_element + self.CONF_OBJECTS_SHIFT + cur_conf_objects * self.OBJECT_TUPLE_LEN,
-                        self.OBJECT_TUPLE_LEN):
-                    object_support_type = int(file_data[object_num + self.OBJECT_SUPPORT_TYPE_SHIFT])
-                    object_uuid = file_data[object_num + self.OBJECT_UUID_SHIFT]
-                    conf_objects[object_uuid] = object_support_type
+            for object_num in range(
+                    cur_element + 1 + self.CONF_OBJECTS_SHIFT,
+                    cur_element + self.CONF_OBJECTS_SHIFT + cur_conf_objects * self.OBJECT_TUPLE_LEN,
+                    self.OBJECT_TUPLE_LEN):
+                object_support_type = int(file_data[object_num + self.OBJECT_SUPPORT_TYPE_SHIFT])
+                object_uuid = file_data[object_num + self.OBJECT_UUID_SHIFT]
+                conf_objects[object_uuid] = object_support_type
 
-                cur_element = object_num + 2 + self.OBJECT_TUPLE_LEN
+            cur_element = object_num + 2 + self.OBJECT_TUPLE_LEN
 
-                conf_data[conf_name] = dict(
-                    conf_version=conf_version,
-                    conf_provider=conf_provider,
-                    conf_objects=conf_objects,
-                )
+            conf_data[conf_name] = dict(
+                conf_version=conf_version,
+                conf_provider=conf_provider,
+                conf_objects=conf_objects,
+            )
 
         return conf_data
 
@@ -244,6 +209,39 @@ def _get_childes(obj: ElementTree):
 
 def _get_uuid(obj: ElementTree):
     return obj.attrib['uuid']
+
+
+def _parse_attr_child(obj: ElementTree):
+    name_obj = _get_property(obj, 'Name')[0]
+    return dict(
+        uuid=_get_uuid(obj),
+        name=name_obj.text,
+        line_number=name_obj.sourceline
+    )
+
+
+def set_child_by_tag(childes: Dict[str, list], obj: ElementTree):
+    tag = QName(obj).localname
+    if tag == 'Form':
+        pass
+    elif tag == 'Template':
+        pass
+    elif tag == 'Command':
+        pass
+    elif tag in ['Recalculation', 'Table', 'Cube', 'Function']:
+        pass
+
+    elif tag in ['Attribute', 'Operation', 'Column',
+                 'EnumValue', 'Resource', 'Dimension',
+                 'AccountingFlag', 'ExtDimensionAccountingFlag',
+                 'AddressingAttribute']:
+        childes['attributes'].append(_parse_attr_child(obj))
+    elif tag in ['TabularSection', 'URLTemplate']:
+        tabular_data = _parse_attr_child(obj)
+        tabular_data['attributes'] = [_parse_attr_child(tab_attr) for tab_attr in _get_childes(obj)]
+        childes['attributes'].append(tabular_data)
+    else:
+        raise ValueError(f'Не описан tag {tag}')
 
 
 def _get_property(obj: ElementTree, tag_name: str):

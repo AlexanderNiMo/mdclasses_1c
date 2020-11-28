@@ -75,7 +75,7 @@ class TestConfiguration(case.TestCase):
 
         self.assertEqual(
             report.relative_path,
-            'Reports/Отчет1.xml',
+            Path('Reports/Отчет1.xml'),
             'Не верно определена строка в файле')
 
         self.assertEqual(report.full_name, 'Report.Отчет1', 'Не верно определено имя')

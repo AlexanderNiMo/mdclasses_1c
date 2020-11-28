@@ -144,38 +144,36 @@ class ConfObject(Supportable):
         self.attributes: List[ObjectAttribute] = list()
 
     @property
-    def file_name(self):
-        return path.join(self.root_path, self.relative_path)
+    def file_name(self) -> Path:
+        return self.root_path.joinpath(self.relative_path)
 
     @property
     def full_name(self):
         return f'{self.obj_type.value}.{self.name}'
 
     @property
-    def root_path(self):
+    def root_path(self) -> Path:
         return self.parent.root_path
 
     @property
-    def relative_path(self):
+    def relative_path(self) -> Path:
         return resolve_path(self.obj_type, self.name)
 
     @property
-    def obj_type_dir(self):
-        return Path(self.file_name).parent
+    def obj_type_dir(self) -> Path:
+        return self.file_name.parent
 
     @property
     def obj_dir(self) -> Path:
-        return Path(self.ext_path).parent
+        return self.ext_path.parent
 
     @property
     def form_path(self):
-        root_path = Path(self.root_path)
-        return root_path.joinpath(resolve_form_path(self.obj_type, self.name))
+        return self.root_path.joinpath(resolve_form_path(self.obj_type, self.name))
 
     @property
     def ext_path(self) -> Path:
-        root_path = Path(self.root_path)
-        return root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
+        return self.root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
 
     def read_modules(self):
         ext_path = self.ext_path
@@ -192,9 +190,7 @@ class ConfObject(Supportable):
     def read_forms(self):
         self.forms = []
 
-        root_path = Path(self.root_path)
-
-        forms_path = root_path.joinpath(resolve_form_path(self.obj_type, self.name)).absolute()
+        forms_path = self.form_path
 
         if not forms_path.exists():
             return
@@ -271,7 +267,7 @@ class ConfObject(Supportable):
         return data
 
     @classmethod
-    def from_dict(cls, data, parent: 'Configuration'):
+    def from_dict(cls, data: dict, parent: 'Configuration'):
         obj = cls(
             name=data['name'],
             parent=parent,
@@ -347,13 +343,13 @@ class ObjectAttribute(Supportable):
 
 class Configuration(Supportable):
 
-    def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: str, name: str,
+    def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: Path, name: str,
                  parser: 'ABCConfigParser'):
         super(Configuration, self).__init__(uuid)
 
         self._parser: 'ABCConfigParser' = parser
         self.name = name
-        self.root_path = root_path
+        self.root_path = Path(root_path)
 
         self.conf_objects = [
             ConfObject(
@@ -430,15 +426,15 @@ class Configuration(Supportable):
         return new_object
 
     @property
-    def file_name(self):
-        return path.join(self.root_path, resolve_path(ObjectType.CONFIGURATION, self.name))
+    def file_name(self) -> Path:
+        return self.root_path.joinpath(resolve_path(ObjectType.CONFIGURATION, self.name))
 
     @classmethod
     def from_dict(cls, data):
         conf = cls(
             uuid=data['uuid'],
             name=data['name'],
-            root_path='',
+            root_path=Path(''),
             conf_objects=list(),
             props=data['props'],
             parser=data.get('parser')
@@ -480,7 +476,7 @@ class ABCObjectParser(ABC):
     pass
 
 
-def resolve_path(obj_type: ObjectType, name: str = '') -> str:
+def resolve_path(obj_type: ObjectType, name: str = '') -> Path:
     if obj_type == ObjectType.CONFIGURATION:
         result = f'{obj_type.value}.xml'
     elif obj_type == ObjectType.FILTER_CRITERION:
@@ -496,26 +492,26 @@ def resolve_path(obj_type: ObjectType, name: str = '') -> str:
     else:
         result = f'{obj_type.value}s/{name}.xml'
 
-    return result
+    return Path(result)
 
 
-def resolve_ext_path(obj_type: ObjectType, name: str = '') -> str:
+def resolve_ext_path(obj_type: ObjectType, name: str = '') -> Path:
     if obj_type == ObjectType.CONFIGURATION:
-        result = ''
+        result = Path('')
     elif obj_type == ObjectType.FILTER_CRITERION:
-        result = f'FilterCriteria/{name}'
+        result = Path(f'FilterCriteria/{name}')
     elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
-        result = f'ChartsOfCharacteristicTypes/{name}'
+        result = Path(f'ChartsOfCharacteristicTypes/{name}')
     elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
-        result = f'ChartsOfAccounts/{name}'
+        result = Path(f'ChartsOfAccounts/{name}')
     elif obj_type == ObjectType.BUSINESS_PROCESS:
-        result = f'BusinessProcesses/{name}'
+        result = Path(f'BusinessProcesses/{name}')
     elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
-        result = f'ChartsOfCalculationTypes/{name}'
+        result = Path(f'ChartsOfCalculationTypes/{name}')
     else:
-        result = f'{obj_type.value}s/{name}'
+        result = Path(f'{obj_type.value}s/{name}')
 
-    return f'{result}/Ext'
+    return Path(f'{result}/Ext')
 
 
 def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
@@ -546,4 +542,4 @@ def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
     else:
         result = f'{obj_type.value}s/{name}/Forms'
 
-    return f'{result}'
+    return Path(f'{result}')
