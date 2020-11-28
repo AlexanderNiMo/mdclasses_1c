@@ -3,6 +3,7 @@ import enum
 from os import path
 from pathlib import Path
 from abc import ABC, abstractmethod
+import shutil
 
 from mdclasses.Module import Module, create_module, ModuleParser
 from mdclasses.Form import Form
@@ -159,8 +160,12 @@ class ConfObject(Supportable):
         return resolve_path(self.obj_type, self.name)
 
     @property
-    def obj_dir(self) -> Path:
+    def obj_type_dir(self):
         return Path(self.file_name).parent
+
+    @property
+    def obj_dir(self) -> Path:
+        return Path(self.ext_path).parent
 
     @property
     def form_path(self):
@@ -342,9 +347,11 @@ class ObjectAttribute(Supportable):
 
 class Configuration(Supportable):
 
-    def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: str, name: str):
+    def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: str, name: str,
+                 parser: 'ABCConfigParser'):
         super(Configuration, self).__init__(uuid)
 
+        self._parser: 'ABCConfigParser' = parser
         self.name = name
         self.root_path = root_path
 
@@ -394,6 +401,38 @@ class Configuration(Supportable):
         )
         return data
 
+    def add_object(self, obj: ConfObject):
+        try:
+            self.get_object(obj.name, obj.obj_type)
+        except IndexError:
+            new_object = obj
+        else:
+            raise ValueError(f'Объект {obj} уже есть в конфигурации')
+        if obj.parent.root_path != self.root_path:
+            new_object = self.clone_object(obj)
+
+        self.conf_objects.append(new_object)
+
+        return new_object
+
+    def clone_object(self, obj: ConfObject) -> ConfObject:
+        data_dict = obj.to_dict()
+        new_object = ConfObject.from_dict(data_dict, self)
+
+        type_path = new_object.obj_type_dir
+
+        if not type_path.exists():
+            type_path.mkdir()
+
+        shutil.copytree(obj.obj_dir, new_object.obj_dir)
+        shutil.copy(obj.file_name, new_object.file_name)
+
+        return new_object
+
+    @property
+    def file_name(self):
+        return path.join(self.root_path, resolve_path(ObjectType.CONFIGURATION, self.name))
+
     @classmethod
     def from_dict(cls, data):
         conf = cls(
@@ -401,10 +440,19 @@ class Configuration(Supportable):
             name=data['name'],
             root_path='',
             conf_objects=list(),
-            props=data['props']
+            props=data['props'],
+            parser=data.get('parser')
         )
         conf.conf_objects = [ConfObject.from_dict(obj_data, conf) for obj_data in data['conf_objects']]
         return conf
+
+    def save_to_file(self):
+
+        cur_objects = set([obj.full_name for obj in self.conf_objects])
+        file_obj = set(self._parser.object_list())
+        new_objects_str = [el.split('.') for el in cur_objects - file_obj]
+
+        self._parser.add_objects_to_configuration([self.get_object(el[1], el[0]) for el in new_objects_str])
 
     def __repr__(self):
         return f'<Configuration: {self.name} {self.root_path}>'
@@ -415,6 +463,21 @@ class SupportType(enum.Enum):
     EDITABLE_SUPPORT_ENABLED = 1
     NOT_SUPPORTED = 2
     NONE_SUPPORT = 3
+
+
+class ABCConfigParser(ABC):
+
+    @abstractmethod
+    def object_list(self) -> List[str]:
+        pass
+
+    @abstractmethod
+    def add_objects_to_configuration(self, objects: List[ConfObject]):
+        pass
+
+
+class ABCObjectParser(ABC):
+    pass
 
 
 def resolve_path(obj_type: ObjectType, name: str = '') -> str:

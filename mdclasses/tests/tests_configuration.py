@@ -1,6 +1,9 @@
 from unittest import case
 from pathlib import Path
 from json import dumps, load
+import shutil
+import tempfile
+import os
 
 from mdclasses.builder import create_configuration, read_configuration_objects, read_configuration
 from mdclasses import ObjectType, ConfObject, Configuration, Module
@@ -120,20 +123,24 @@ class TestConfiguration(case.TestCase):
         conf = read_configuration(conf_path)
 
         obj = conf.get_object('Форма', ObjectType.COMMON_FORM)
-        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.ext_path, 'Не верно определен путь ext для COMMON_FORM')
+        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.ext_path,
+                         'Не верно определен путь ext для COMMON_FORM')
 
         obj = conf.get_object('Перечисление1', ObjectType.ENUM)
-        self.assertEqual(conf_path.joinpath('Enums', 'Перечисление1', 'Ext'), obj.ext_path, 'Не верно определен путь ext для Enums')
+        self.assertEqual(conf_path.joinpath('Enums', 'Перечисление1', 'Ext'), obj.ext_path,
+                         'Не верно определен путь ext для Enums')
 
     def test_form_path(self):
         conf_path = Path(test_data_root).absolute()
         conf = read_configuration(conf_path)
 
         obj = conf.get_object('Форма', ObjectType.COMMON_FORM)
-        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.form_path, 'Не верно определен путь ext для COMMON_FORM')
+        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.form_path,
+                         'Не верно определен путь ext для COMMON_FORM')
 
         obj = conf.get_object('Документ1', ObjectType.DOCUMENT)
-        self.assertEqual(conf_path.joinpath('Documents', 'Документ1', 'Forms'), obj.form_path, 'Не верно определен путь ext для Enums')
+        self.assertEqual(conf_path.joinpath('Documents', 'Документ1', 'Forms'), obj.form_path,
+                         'Не верно определен путь ext для Enums')
 
     def read_empty_module(self):
         conf_path = Path(test_data_root).absolute()
@@ -151,3 +158,54 @@ class TestConfiguration(case.TestCase):
             conf = Configuration.from_dict(load(f))
         with Path(json_report_path).open('r', encoding=encoding) as f:
             report = ConfObject.from_dict(load(f), conf)
+
+
+class TestChangeConfiguration(case.TestCase):
+
+    def setUp(self) -> None:
+        self.temp_path = test_data_root.parent.joinpath('temp').resolve().absolute()
+        self.temp_config_path = self.temp_path.joinpath('config').resolve().absolute()
+        self.base_config_path = self.temp_path.joinpath('config_base').resolve().absolute()
+        if not self.temp_path.exists():
+            self.temp_path.mkdir()
+        shutil.copytree(test_data_root, self.temp_config_path)
+        shutil.copytree(test_data_root, self.base_config_path)
+
+    def test_save_configuration(self):
+        conf = read_configuration(self.temp_config_path)
+
+        conf.conf_objects.append(ConfObject('test', ObjectType.REPORT, conf))
+        conf.conf_objects.append(ConfObject('test1', ObjectType.DOCUMENT, conf))
+
+        tmp_file = tempfile.mktemp()
+        shutil.copy(Path(conf.file_name), Path(tmp_file))
+
+        conf.save_to_file()
+        self.assertIn('<Report>test</Report>', Path(conf.file_name).read_text(encoding='utf-8'))
+        self.assertIn('<Document>test1</Document>', Path(conf.file_name).read_text(encoding='utf-8'))
+        os.remove(Path(conf.file_name))
+        shutil.copy(Path(tmp_file), Path(conf.file_name))
+        os.remove(Path(tmp_file))
+
+    def test_clone_obj(self):
+        conf_base = read_configuration(self.base_config_path)
+        filter = conf_base.get_object('КритерийОтбора1', ObjectType.FILTER_CRITERION)
+
+        conf = read_configuration(self.temp_config_path)
+        with self.assertRaises(ValueError) as ex:
+            conf.add_object(filter)
+        self.assertEqual(ex.exception.args[0], f'Объект {filter} уже есть в конфигурации')
+
+        dir_path = filter.obj_dir
+        file_name = filter.file_name
+        filter.name = 'КритерийОтбора2'
+
+        shutil.copytree(dir_path, filter.obj_dir)
+        shutil.copy(file_name, filter.file_name)
+
+        new_object = conf.add_object(filter)
+
+        self.assertTrue(new_object.obj_dir.exists(), 'Данные объекта не перенесены')
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.temp_path)

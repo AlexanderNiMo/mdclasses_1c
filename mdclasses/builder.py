@@ -1,6 +1,6 @@
 from os import path
 from json import load, dump
-from mdclasses.parser import XMLParser, SupportConfigurationParser
+from mdclasses.parser import get_parser, SupportConfigurationParser
 from mdclasses.conf_base import ObjectType, Configuration, resolve_path
 
 
@@ -15,11 +15,12 @@ def read_configuration(config_dir: str) -> Configuration:
 def create_configuration(config_dir: str):
 
     config_data = path.join(config_dir, resolve_path(ObjectType.CONFIGURATION))
-    parser = XMLParser(config_data, ObjectType.CONFIGURATION)
+    parser = get_parser(config_data, ObjectType.CONFIGURATION)
 
-    uuid, child_data, name, props = parser.parse_configuration()
+    uuid, child_data, name, props = parser.parse()
 
-    return Configuration(uuid=uuid, conf_objects=child_data, root_path=config_dir, name=name, props=props)
+    return Configuration(uuid=uuid, conf_objects=child_data, root_path=config_dir,
+                         name=name, props=props, parser=parser)
 
 
 def get_support_data(config_dir: str):
@@ -36,8 +37,8 @@ def read_configuration_objects(conf: Configuration):
             conf.root_path,
             resolve_path(conf_object.obj_type, conf_object.name)
         )
-        parser = XMLParser(object_config, conf_object.obj_type)
-        conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = parser.parse_object()
+        parser = get_parser(object_config, conf_object.obj_type)
+        conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = parser.parse()
         conf_object.set_childes(obj_childes)
 
 

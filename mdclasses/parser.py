@@ -1,8 +1,17 @@
 from os import path
 import re
-from mdclasses.conf_base import ObjectType
-from lxml.etree import parse, QName, ElementTree
-from typing import Dict
+from abc import ABC, abstractmethod
+import enum
+
+from mdclasses.conf_base import ObjectType, ABCConfigParser, ABCObjectParser, ConfObject
+from lxml.etree import parse, QName, ElementTree, Element, tostring
+from typing import Dict, List, Union
+
+
+class Format(enum.Enum):
+
+    EDT = 'edt'
+    CONFIGURATOR = 'configurator'
 
 
 class XMLParser:
@@ -11,38 +20,65 @@ class XMLParser:
         self.file = path.abspath(file)
         self.obj_type = obj_type
 
-    def _get_childs(self, obj: ElementTree):
-        return obj.xpath('./tns:ChildObjects/*', namespaces={'tns': obj.nsmap[None]})
+    @abstractmethod
+    def parse(self) -> (str, list, str, dict):
+        pass
 
-    def _get_uuid(self, obj: ElementTree):
-        return obj.attrib['uuid']
 
-    def _get_property(self, obj: ElementTree, tag_name: str):
-        return obj.xpath(f'./tns:Properties/tns:{tag_name}', namespaces={'tns': obj.nsmap[None]})
+def get_parser(file: str, obj_type: ObjectType,
+               export_type: Format = Format.CONFIGURATOR) -> Union['PureXMLConfigParser', 'PureXMLObjectParser']:
+    if export_type == Format.CONFIGURATOR:
+        if obj_type == ObjectType.CONFIGURATION:
+            return PureXMLConfigParser(file, obj_type)
+        else:
+            return PureXMLObjectParser(file, obj_type)
+    else:
+        raise NotImplementedError
 
-    def _read_properties(self, obj: ElementTree):
-        props = {}
-        for el in obj.xpath(f'./tns:Properties/*', namespaces={'tns': obj.nsmap[None]}):
-            tag = QName(el).localname
-            if len(el) == 0:
-                val = el.text
-            else:
-                val = self._read_properties(el)
-            props[tag] = val
-        return props
 
-    def parse_configuration(self):
+class PureXMLParser(XMLParser, ABC):
+
+    def __init__(self, file: str, obj_type: ObjectType):
+        super(PureXMLParser, self).__init__(file, obj_type)
+        self._root = None
+        self._encoding = 'utf-8'
+
+    def _get_root(self) -> ElementTree():
+
+        if self._root is not None:
+            return self._root
+
+        with open(self.file, r'r', encoding=self._encoding) as f:
+            tree = parse(f)
+
+        root = tree.getroot()
+
+        obj_tag = root.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': root.nsmap[None]})
+
+        if len(obj_tag) == 0:
+            raise ValueError(f'Не найден объект по типу {self.obj_type.value} в файле {self.file}')
+        self._root = obj_tag[0]
+
+        return self._root
+
+
+class PureXMLConfigParser(PureXMLParser, ABCConfigParser):
+
+    def parse(self) -> (str, list, str, dict):
+        return self._parse_configuration()
+
+    def _parse_configuration(self) -> (str, list, str, dict):
 
         configuration = self._get_root()
 
         childes = []
-        uuid = self._get_uuid(configuration)
-        name_obj = self._get_property(configuration, 'Name')[0]
+        uuid = _get_uuid(configuration)
+        name_obj = _get_property(configuration, 'Name')[0]
         name = name_obj.text
 
-        properties = self._read_properties(configuration)
+        properties = _read_properties(configuration)
 
-        child_objs = self._get_childs(configuration)
+        child_objs = _get_childes(configuration)
 
         for child_obj in child_objs:
             childes.append(dict(
@@ -53,7 +89,33 @@ class XMLParser:
 
         return uuid, childes, name, properties
 
-    def parse_object(self):
+    def object_list(self) -> List[str]:
+        configuration = self._get_root()
+        child_objs = _get_childes(configuration)
+        return [f'{QName(child_obj).localname}.{child_obj.text}' for child_obj in child_objs]
+
+    def add_objects_to_configuration(self, objects: List[ConfObject]):
+        if not objects:
+            return
+        conf = self._get_root()
+        child_objects = conf.find('.//ChildObjects', namespaces=conf.nsmap)
+
+        for obj in objects:
+            child = Element(str(obj.obj_type.value))
+            child.text = obj.name
+            child_objects.append(child)
+        with open(self.file, r'wb') as f:
+            f.write(
+                tostring(conf.getparent(), xml_declaration=True, encoding=self._encoding, pretty_print=True)
+            )
+
+
+class PureXMLObjectParser(PureXMLParser, ABCObjectParser):
+
+    def parse(self) -> (str, list, str, dict):
+        return self._parse_object()
+
+    def _parse_object(self) -> (str, list, str, dict):
 
         obj = self._get_root()
 
@@ -64,11 +126,11 @@ class XMLParser:
             commands=list(),
             others=list()
         )
-        uuid = self._get_uuid(obj)
-        child_objs = self._get_childs(obj)
-        name_obj = self._get_property(obj, 'Name')[0]
+        uuid = _get_uuid(obj)
+        child_objs = _get_childes(obj)
+        name_obj = _get_property(obj, 'Name')[0]
 
-        properties = self._read_properties(obj)
+        properties = _read_properties(obj)
 
         if self.obj_type in [
             ObjectType.SUBSYSTEM,
@@ -98,33 +160,18 @@ class XMLParser:
             childes['attributes'].append(self._parse_attr_child(obj))
         elif tag in ['TabularSection', 'URLTemplate']:
             tabular_data = self._parse_attr_child(obj)
-            tabular_data['attributes'] = [self._parse_attr_child(tab_attr) for tab_attr in self._get_childs(obj)]
+            tabular_data['attributes'] = [self._parse_attr_child(tab_attr) for tab_attr in _get_childes(obj)]
             childes['attributes'].append(tabular_data)
         else:
             raise ValueError(f'Не описан tag {tag}')
 
     def _parse_attr_child(self, obj: ElementTree):
-        name_obj = self._get_property(obj, 'Name')[0]
+        name_obj = _get_property(obj, 'Name')[0]
         return dict(
-            uuid=self._get_uuid(obj),
+            uuid=_get_uuid(obj),
             name=name_obj.text,
             line_number=name_obj.sourceline
         )
-
-    def _get_root(self) -> ElementTree():
-
-        with open(self.file, r'r', encoding='utf-8') as f:
-            tree = parse(f)
-
-        root = tree.getroot()
-
-        obj_tag = root.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': root.nsmap[None]})
-
-        if len(obj_tag) == 0:
-            raise ValueError(f'Не найден объект по типу {self.obj_type.value} в файле {self.file}')
-        obj_tag = obj_tag[0]
-
-        return obj_tag
 
 
 class SupportConfigurationParser:
@@ -189,3 +236,27 @@ class SupportConfigurationParser:
                 )
 
         return conf_data
+
+
+def _get_childes(obj: ElementTree):
+    return obj.xpath('./tns:ChildObjects/*', namespaces={'tns': obj.nsmap[None]})
+
+
+def _get_uuid(obj: ElementTree):
+    return obj.attrib['uuid']
+
+
+def _get_property(obj: ElementTree, tag_name: str):
+    return obj.xpath(f'./tns:Properties/tns:{tag_name}', namespaces={'tns': obj.nsmap[None]})
+
+
+def _read_properties(obj: ElementTree):
+    props = {}
+    for el in obj.xpath(f'./tns:Properties/*', namespaces={'tns': obj.nsmap[None]}):
+        tag = QName(el).localname
+        if len(el) == 0:
+            val = el.text
+        else:
+            val = _read_properties(el)
+        props[tag] = val
+    return props
