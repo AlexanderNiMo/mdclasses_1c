@@ -1,6 +1,6 @@
 from typing import Union
 from pathlib import Path
-from json import loads, dumps
+from json import load, dump
 from mdclasses.parser import get_parser, SupportConfigurationParser
 from mdclasses.conf_base import ObjectType, Configuration, resolve_path
 
@@ -41,14 +41,15 @@ def read_configuration_objects(conf: Configuration):
         conf_object.set_childes(obj_childes)
 
 
-def save_to_json(config_dir: Union[str, Path], json_path: [str, Path]):
+def save_to_json(conf: Configuration, json_path: [str, Path]):
     json_path = Path(json_path)
-    conf = read_configuration(config_dir)
     data = conf.to_dict()
-    json_path.write_text(dumps(data), encoding='utf-8')
+    with json_path.open('w', encoding='utf-8') as f:
+        dump(data, f)
 
 
 def read_from_json(json_path: Union[str, Path]):
     json_path = Path(json_path)
-    data = loads(json_path.read_text(encoding='utf-8'))
+    with json_path.open(r'r', encoding='utf-8') as f:
+        data = load(f)
     return Configuration.from_dict(data)

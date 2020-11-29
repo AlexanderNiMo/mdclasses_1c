@@ -5,8 +5,10 @@ import shutil
 import tempfile
 import os
 
-from mdclasses.builder import create_configuration, read_configuration_objects, read_configuration
+from mdclasses.builder import (create_configuration, read_configuration_objects, read_configuration,
+                               save_to_json, read_from_json)
 from mdclasses import ObjectType, ConfObject, Configuration, Module
+from mdclasses.parser import SupportConfigurationParser
 
 test_data_root = Path(Path(__file__).parent).joinpath('test_data', 'config')
 json_report_path = Path(Path(__file__).parent).joinpath('test_data', 'json_data', 'report.json')
@@ -153,11 +155,36 @@ class TestConfiguration(case.TestCase):
         conf_path = Path(test_data_root).absolute()
         read_configuration(conf_path)
 
+    def test_read_support(self):
+        support_path = test_data_root.parent.joinpath('support', 'ParentConfigurations.bin')
+        support_parser = SupportConfigurationParser(support_path)
+        data = support_parser.parse()
+
+        self.assertIn('Конфигурация',  data.keys(), 'Не обнаруженно описание конфигурации')
+        conf_data = data['Конфигурация']
+
+        self.assertIn('conf_version',  conf_data.keys(), 'Не обнаруженно описание версии конфигурации')
+        self.assertIn('conf_provider',  conf_data.keys(), 'Не обнаруженно описание поставщика конфигурации')
+        self.assertIn('conf_objects',  conf_data.keys(), 'Не обнаруженно описание объектов')
+
+        self.assertEqual(conf_data['conf_version'], '"0.0.1"', 'Не верно определена версия')
+        self.assertEqual(conf_data['conf_provider'], '"Прогтехника"', 'Не верно определен поставщик')
+
+        obj_data = conf_data['conf_objects']
+
+        self.assertIn('1996326a-5156-4eb1-a9fe-5db6ab532426',  obj_data.keys(), 'Не обнаруженно описание объекта')
+        self.assertEqual(1, obj_data['1996326a-5156-4eb1-a9fe-5db6ab532426'], 'не верно определено свойство')
+
+        self.assertEqual(len(obj_data), 11, 'Количество прочитанных объектов, определено не верно.')
+
     def test_from_json(self):
-        with Path(json_config_path).open('r', encoding=encoding) as f:
-            conf = Configuration.from_dict(load(f))
-        with Path(json_report_path).open('r', encoding=encoding) as f:
-            report = ConfObject.from_dict(load(f), conf)
+        config = read_from_json(json_config_path)
+
+    def test_save_to_json(self):
+        config = read_from_json(json_config_path)
+        json_path = json_report_path.parent.joinpath('test')
+        save_to_json(config, json_path)
+        os.remove(json_path)
 
 
 class TestChangeConfiguration(case.TestCase):

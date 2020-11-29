@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 from abc import ABC, abstractmethod
 import enum
-from lxml.etree import QName, ElementTree, Element, tostring, fromstring
+from lxml.etree import QName, ElementTree, Element, tostring, parse
 from typing import Dict, List, Union
 
 from mdclasses.conf_base import ObjectType, ABCConfigParser, ABCObjectParser, ConfObject
@@ -47,10 +47,12 @@ class PureXMLParser(XMLParser, ABC):
 
         if self._root is not None:
             return self._root
+        with self.file.open('r', encoding=self._encoding) as f:
+            tree = parse(f)
 
-        tree = fromstring(self.file.read_text(encoding=self._encoding))
+        root = tree.getroot()
 
-        obj_tag = tree.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': tree.nsmap[None]})
+        obj_tag = root.xpath(f'//tns:{self.obj_type.value}', namespaces={'tns': root.nsmap[None]})
 
         if len(obj_tag) == 0:
             raise ValueError(f'Не найден объект по типу {self.obj_type.value} в файле {self.file}')
