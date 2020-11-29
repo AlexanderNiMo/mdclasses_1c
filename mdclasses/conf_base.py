@@ -1,70 +1,13 @@
-from typing import List, Dict, Union
-import enum
-from os import path
+from _ast import For
+from typing import List, Dict, Union, Optional
 from pathlib import Path
 from abc import ABC, abstractmethod
 import shutil
 
+from mdclasses.configuration_enums import ObjectType, SupportType, Format
 from mdclasses.Module import Module, create_module, ModuleParser
 from mdclasses.Form import Form
-
-
-class ObjectType(enum.Enum):
-    UNDEFINED = ''
-    CONFIGURATION = 'Configuration'
-    INFORMATION_REGISTER = "InformationRegister"
-    FUNCTIONAL_OPTION = "FunctionalOption"
-    STYLE_ITEM = "StyleItem"
-    CONSTANT = "Constant"
-    COMMON_MODULE = "CommonModule"
-    DEFINED_TYPE = "DefinedType"
-    CHART_OF_CHARACTERISTIC_TYPES = "ChartOfCharacteristicTypes"
-    SCHEDULED_JOB = "ScheduledJob"
-    XDTO_PACKAGE = "XDTOPackage"
-    LANGUAGE = "Language"
-    COMMON_TEMPLATE = "CommonTemplate"
-    COMMAND_GROUP = "CommandGroup"
-    REPORT = "Report"
-    ROLE = "Role"
-    WEBSERVICE = "WebService"
-    CATALOG = "Catalog"
-    SESSION_PARAMETER = "SessionParameter"
-    INTERFACE = "Interface"
-    DOCUMENT = "Document"
-    DOCUMENT_JOURNAL = "DocumentJournal"
-    EXCHANGE_PLAN = "ExchangePlan"
-    DATA_PROCESSOR = "DataProcessor"
-    COMMON_COMMAND = "CommonCommand"
-    COMMON_PICTURE = "CommonPicture"
-    STYLE = "Style"
-    FILTER_CRITERION = "FilterCriterion"
-    SUBSYSTEM = "Subsystem"
-    FUNCTIONAL_OPTIONS_PARAMETER = "FunctionalOptionsParameter"
-    ENUM = "Enum"
-    COMMON_FORM = "CommonForm"
-    SETTINGS_STORAGE = "SettingsStorage"
-    EVENT_SUBSCRIPTION = "EventSubscription"
-    COMMON_ATTRIBUTE = 'CommonAttribute'
-    HTTP_SERVICE = 'HTTPService'
-    WS_REFERENCE = 'WSReference'
-    DOCUMENT_NUMERATOR = 'DocumentNumerator'
-    SEQUENCE = 'Sequence'
-    ACCUMULATION_REGISTER = 'AccumulationRegister'
-    CHART_OF_ACCOUNTS = 'ChartOfAccounts'
-    ACCOUNTING_REGISTER = 'AccountingRegister'
-    BUSINESS_PROCESS = 'BusinessProcess'
-    TASK = 'Task'
-    CHART_OF_CALCULATION_TYPES = 'ChartOfCalculationTypes'
-    CALCULATION_REGISTER = 'CalculationRegister'
-    EXTERNAL_DATA_SOURCE = 'ExternalDataSource'
-    DIMENSION_TABLE = 'DimensionTable'
-    RECALCULATION = 'Recalculation'
-    FORM = 'Form'
-    TEMPLATE = 'Template'
-    MODULE = 'Module'
-    COMMAND = 'Command'
-    TABLE = 'Table'
-    CUBE = 'Cube'
+from mdclasses.utils.path_resolver import get_path_resolver, ABCPathResolver
 
 
 class Serializable(ABC):
@@ -118,8 +61,11 @@ class Supportable(Serializable):
 class ConfObject(Supportable):
 
     def __init__(self, name: str, obj_type: Union[ObjectType, str], parent: 'Configuration',
-                 line_number: int = 0, props: dict = None):
+                 line_number: int = 0, props: dict = None, file_format: Format = Format.CONFIGURATOR):
         super(ConfObject, self).__init__()
+
+        self.file_format = file_format
+        self.__path_resolver: Optional[ABCPathResolver] = None
 
         if props is None:
             props = {}
@@ -144,20 +90,22 @@ class ConfObject(Supportable):
         self.attributes: List[ObjectAttribute] = list()
 
     @property
-    def file_name(self) -> Path:
-        return self.root_path.joinpath(self.relative_path)
+    def path_resolver(self) -> ABCPathResolver:
+        if self.__path_resolver is None:
+            self.__path_resolver = get_path_resolver(self.file_format)
+        return self.__path_resolver
 
     @property
     def full_name(self):
         return f'{self.obj_type.value}.{self.name}'
 
     @property
-    def root_path(self) -> Path:
-        return self.parent.root_path
+    def file_name(self) -> Path:
+        return self.root_path.joinpath(self.path_resolver.conf_file_path(self.obj_type, self.name))
 
     @property
-    def relative_path(self) -> Path:
-        return resolve_path(self.obj_type, self.name)
+    def root_path(self) -> Path:
+        return self.parent.root_path
 
     @property
     def obj_type_dir(self) -> Path:
@@ -169,11 +117,11 @@ class ConfObject(Supportable):
 
     @property
     def form_path(self):
-        return self.root_path.joinpath(resolve_form_path(self.obj_type, self.name))
+        return self.root_path.joinpath(self.path_resolver.form_path(self.obj_type, self.name))
 
     @property
     def ext_path(self) -> Path:
-        return self.root_path.joinpath(resolve_ext_path(self.obj_type, self.name)).absolute()
+        return self.root_path.joinpath(self.path_resolver.ext_path(self.obj_type, self.name)).absolute()
 
     def read_modules(self):
         ext_path = self.ext_path
@@ -262,6 +210,7 @@ class ConfObject(Supportable):
                 templates=[template.to_dict() for template in self.templates],
                 commands=[command.to_dict() for command in self.commands],
                 line_number=self.line_number,
+                file_format=self.file_format.value
             )
         )
         return data
@@ -273,6 +222,7 @@ class ConfObject(Supportable):
             parent=parent,
             line_number=data['line_number'],
             obj_type=data['obj_type'],
+            file_format=Format(data['file_format'])
         )
 
         obj.uuid = data['uuid'],
@@ -344,12 +294,13 @@ class ObjectAttribute(Supportable):
 class Configuration(Supportable):
 
     def __init__(self, uuid: str, props: dict, conf_objects: List[dict], root_path: Path, name: str,
-                 parser: 'ABCConfigParser'):
+                 parser: 'ABCConfigParser', file_format: Format = Format.CONFIGURATOR):
         super(Configuration, self).__init__(uuid)
 
         self._parser: 'ABCConfigParser' = parser
         self.name = name
         self.root_path = Path(root_path)
+        self.file_format = file_format
 
         self.conf_objects = [
             ConfObject(
@@ -360,6 +311,13 @@ class Configuration(Supportable):
         ]
         self.support_type = SupportType.NONE_SUPPORT
         self.props = props
+        self.__path_resolver: Optional[ABCPathResolver] = None
+
+    @property
+    def path_resolver(self):
+        if self.__path_resolver is None:
+            self.__path_resolver = get_path_resolver(self.file_format)
+        return self.__path_resolver
 
     def set_support(self, support_data: dict):
         conf_support = {}
@@ -384,18 +342,6 @@ class Configuration(Supportable):
             return data[0]
         except IndexError:
             raise IndexError(f'Объект не найден! Имя:{name} Тип:{obj_type}')
-
-    def to_dict(self):
-        data = super(Configuration, self).to_dict()
-        data.update(
-             dict(
-                name=self.name,
-                uuid=self.uuid,
-                conf_objects=[obj.to_dict() for obj in self.conf_objects],
-                props=self.props
-            )
-        )
-        return data
 
     def add_object(self, obj: ConfObject):
         try:
@@ -427,7 +373,7 @@ class Configuration(Supportable):
 
     @property
     def file_name(self) -> Path:
-        return self.root_path.joinpath(resolve_path(ObjectType.CONFIGURATION, self.name))
+        return self.root_path.joinpath(self.path_resolver.conf_file_path(ObjectType.CONFIGURATION, self.name))
 
     @classmethod
     def from_dict(cls, data):
@@ -437,10 +383,24 @@ class Configuration(Supportable):
             root_path=Path(''),
             conf_objects=list(),
             props=data['props'],
-            parser=data.get('parser')
+            parser=data.get('parser'),
+            file_format=Format(data.get('file_format'))
         )
         conf.conf_objects = [ConfObject.from_dict(obj_data, conf) for obj_data in data['conf_objects']]
         return conf
+
+    def to_dict(self):
+        data = super(Configuration, self).to_dict()
+        data.update(
+             dict(
+                name=self.name,
+                uuid=self.uuid,
+                conf_objects=[obj.to_dict() for obj in self.conf_objects],
+                props=self.props,
+                file_format=self.file_format.value,
+            )
+        )
+        return data
 
     def save_to_file(self):
 
@@ -452,13 +412,6 @@ class Configuration(Supportable):
 
     def __repr__(self):
         return f'<Configuration: {self.name} {self.root_path}>'
-
-
-class SupportType(enum.Enum):
-    NOT_EDITABLE = 0
-    EDITABLE_SUPPORT_ENABLED = 1
-    NOT_SUPPORTED = 2
-    NONE_SUPPORT = 3
 
 
 class ABCConfigParser(ABC):
@@ -474,72 +427,3 @@ class ABCConfigParser(ABC):
 
 class ABCObjectParser(ABC):
     pass
-
-
-def resolve_path(obj_type: ObjectType, name: str = '') -> Path:
-    if obj_type == ObjectType.CONFIGURATION:
-        result = f'{obj_type.value}.xml'
-    elif obj_type == ObjectType.FILTER_CRITERION:
-        result = f'FilterCriteria/{name}.xml'
-    elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
-        result = f'ChartsOfCharacteristicTypes/{name}.xml'
-    elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
-        result = f'ChartsOfAccounts/{name}.xml'
-    elif obj_type == ObjectType.BUSINESS_PROCESS:
-        result = f'BusinessProcesses/{name}.xml'
-    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
-        result = f'ChartsOfCalculationTypes/{name}.xml'
-    else:
-        result = f'{obj_type.value}s/{name}.xml'
-
-    return Path(result)
-
-
-def resolve_ext_path(obj_type: ObjectType, name: str = '') -> Path:
-    if obj_type == ObjectType.CONFIGURATION:
-        result = Path('')
-    elif obj_type == ObjectType.FILTER_CRITERION:
-        result = Path(f'FilterCriteria/{name}')
-    elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
-        result = Path(f'ChartsOfCharacteristicTypes/{name}')
-    elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
-        result = Path(f'ChartsOfAccounts/{name}')
-    elif obj_type == ObjectType.BUSINESS_PROCESS:
-        result = Path(f'BusinessProcesses/{name}')
-    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
-        result = Path(f'ChartsOfCalculationTypes/{name}')
-    else:
-        result = Path(f'{obj_type.value}s/{name}')
-
-    return Path(f'{result}/Ext')
-
-
-def resolve_form_path(obj_type: ObjectType, name: str = '') -> str:
-    types_without_forms = [
-        ObjectType.CONFIGURATION,
-        ObjectType.COMMAND_GROUP,
-        ObjectType.COMMON_MODULE,
-        ObjectType.COMMON_ATTRIBUTE,
-        ObjectType.COMMON_PICTURE,
-        ObjectType.COMMON_TEMPLATE
-    ]
-    if obj_type in types_without_forms:
-        raise ValueError(f'У объекта типа {obj_type} нет форм!')
-    elif obj_type == ObjectType.CONSTANT:
-        result = f'CommonForms/ФормаКонстант/Ext'
-    elif obj_type == ObjectType.COMMON_FORM:
-        result = f'CommonForms/{name}/Ext'
-    elif obj_type == ObjectType.FILTER_CRITERION:
-        result = f'FilterCriteria/Forms/{name}'
-    elif obj_type == ObjectType.CHART_OF_CHARACTERISTIC_TYPES:
-        result = f'ChartsOfCharacteristicTypes/Forms/{name}'
-    elif obj_type == ObjectType.CHART_OF_ACCOUNTS:
-        result = f'ChartsOfAccounts/Forms/{name}'
-    elif obj_type == ObjectType.BUSINESS_PROCESS:
-        result = f'BusinessProcesses/Forms/{name}'
-    elif obj_type == ObjectType.CHART_OF_CALCULATION_TYPES:
-        result = f'ChartsOfCalculationTypes/Forms/{name}'
-    else:
-        result = f'{obj_type.value}s/{name}/Forms'
-
-    return Path(f'{result}')

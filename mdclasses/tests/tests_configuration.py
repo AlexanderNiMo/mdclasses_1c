@@ -76,8 +76,8 @@ class TestConfiguration(case.TestCase):
             'Не верно определена строка в файле')
 
         self.assertEqual(
-            report.relative_path,
-            Path('Reports/Отчет1.xml'),
+            report.file_name,
+            conf_path.joinpath(Path('Reports/Отчет1.xml')),
             'Не верно определена строка в файле')
 
         self.assertEqual(report.full_name, 'Report.Отчет1', 'Не верно определено имя')
@@ -144,7 +144,7 @@ class TestConfiguration(case.TestCase):
         self.assertEqual(conf_path.joinpath('Documents', 'Документ1', 'Forms'), obj.form_path,
                          'Не верно определен путь ext для Enums')
 
-    def read_empty_module(self):
+    def test_read_empty_module(self):
         conf_path = Path(test_data_root).absolute()
         conf = read_configuration(conf_path)
 

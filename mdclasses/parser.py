@@ -1,17 +1,11 @@
 from pathlib import Path
 import re
 from abc import ABC, abstractmethod
-import enum
 from lxml.etree import QName, ElementTree, Element, tostring, parse
 from typing import Dict, List, Union
 
-from mdclasses.conf_base import ObjectType, ABCConfigParser, ABCObjectParser, ConfObject
-
-
-class Format(enum.Enum):
-
-    EDT = 'edt'
-    CONFIGURATOR = 'configurator'
+from mdclasses.conf_base import ABCConfigParser, ABCObjectParser, ConfObject
+from mdclasses.configuration_enums import ObjectType, Format
 
 
 class XMLParser:

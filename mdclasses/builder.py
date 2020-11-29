@@ -2,7 +2,9 @@ from typing import Union
 from pathlib import Path
 from json import load, dump
 from mdclasses.parser import get_parser, SupportConfigurationParser
-from mdclasses.conf_base import ObjectType, Configuration, resolve_path
+from mdclasses.conf_base import Configuration
+from mdclasses.utils.path_resolver import get_path_resolver
+from mdclasses.configuration_enums import ObjectType, Format
 
 
 def read_configuration(config_dir: str) -> Configuration:
@@ -13,9 +15,11 @@ def read_configuration(config_dir: str) -> Configuration:
     return conf
 
 
-def create_configuration(config_dir: Union[str, Path]):
+def create_configuration(config_dir: Union[str, Path], file_format: Format = Format.CONFIGURATOR):
 
-    config_data = Path(config_dir).joinpath(resolve_path(ObjectType.CONFIGURATION))
+    path_resolver = get_path_resolver(file_format)
+
+    config_data = Path(config_dir).joinpath(path_resolver.conf_file_path(ObjectType.CONFIGURATION))
     parser = get_parser(config_data, ObjectType.CONFIGURATION)
 
     uuid, child_data, name, props = parser.parse()
@@ -31,11 +35,12 @@ def get_support_data(config_dir: Union[str, Path]):
     return parser.parse()
 
 
-def read_configuration_objects(conf: Configuration):
+def read_configuration_objects(conf: Configuration, file_format: Format = Format.CONFIGURATOR):
+    path_resolver = get_path_resolver(file_format)
 
     for conf_object in conf.conf_objects:
 
-        object_config = conf.root_path.joinpath(resolve_path(conf_object.obj_type, conf_object.name))
+        object_config = conf.root_path.joinpath(path_resolver.conf_file_path(conf_object.obj_type, conf_object.name))
         parser = get_parser(object_config, conf_object.obj_type)
         conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = parser.parse()
         conf_object.set_childes(obj_childes)
