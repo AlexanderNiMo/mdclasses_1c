@@ -137,7 +137,7 @@ class TestConfiguration(case.TestCase):
         conf = read_configuration(conf_path)
 
         obj = conf.get_object('Форма', ObjectType.COMMON_FORM)
-        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма', 'Ext'), obj.form_path,
+        self.assertEqual(conf_path.joinpath('CommonForms', 'Форма'), obj.form_path,
                          'Не верно определен путь ext для COMMON_FORM')
 
         obj = conf.get_object('Документ1', ObjectType.DOCUMENT)

@@ -18,7 +18,7 @@ class ABCPathResolver(ABC):
         pass
 
     @abstractmethod
-    def form_path(self, obj_type: ObjectType, name: str = '') -> Path:
+    def form_path(self, obj_type: ObjectType, obj_name: str = '', form_name: str = '') -> Path:
         pass
 
     @abstractmethod
@@ -43,7 +43,7 @@ class EDTPathResolver(ABCPathResolver):
     def ext_path(self, obj_type: ObjectType, name: str = '') -> Path:
         raise NotImplementedError(f'Не определена обработка формата {self.file_format}')
 
-    def form_path(self, obj_type: ObjectType, name: str = '') -> Path:
+    def form_path(self, obj_type: ObjectType, obj_name: str = '', form_name: str = '') -> Path:
         raise NotImplementedError(f'Не определена обработка формата {self.file_format}')
 
     def type_path(self, obj_type: ObjectType) -> Path:
@@ -68,7 +68,7 @@ class XMLPathResolver(ABCPathResolver):
 
         return Path(f'{result}/Ext')
 
-    def form_path(self, obj_type: ObjectType, name: str = '') -> Path:
+    def form_path(self, obj_type: ObjectType, obj_name: str = '', form_name: str = '') -> Path:
         types_without_forms = [
             ObjectType.CONFIGURATION,
             ObjectType.COMMAND_GROUP,
@@ -80,11 +80,11 @@ class XMLPathResolver(ABCPathResolver):
         if obj_type in types_without_forms:
             raise ValueError(f'У объекта типа {obj_type} нет форм!')
         elif obj_type == ObjectType.CONSTANT:
-            result = f'CommonForms/ФормаКонстант/Ext'
+            result = f'CommonForms/ФормаКонстант/'
         elif obj_type == ObjectType.COMMON_FORM:
-            result = f'CommonForms/{name}/Ext'
+            result = f'CommonForms/{obj_name}/'
         else:
-            result = f'{self.type_path(obj_type)}/{name}/Forms'
+            result = f'{self.type_path(obj_type)}/{obj_name}/Forms/{form_name}'
 
         return Path(f'{result}')
 
