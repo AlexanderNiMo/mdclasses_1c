@@ -19,7 +19,7 @@ setup(
     author='Alexander_NiMo',
     author_email='binipox@gmail.com',
     lisense='MIT',
-    version='0.15',
+    version='0.16',
     long_description=open(join(dirname(__file__), 'README.md'), encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/AlexanderNiMo/designer_cmd',

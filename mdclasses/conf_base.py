@@ -115,6 +115,13 @@ class SubSystem(Supportable):
     def full_name(self):
         return f'{self.obj_type.value}.{self.name}'
 
+    @property
+    def level(self):
+        if self.parent.obj_type == ObjectType.CONFIGURATION:
+            return 0
+        else:
+            return self.parent.level + 1
+
     def to_dict(self) -> dict:
         data = super(SubSystem, self).to_dict()
         data['file_format'] = self.file_format.value
@@ -507,7 +514,9 @@ class Configuration(Supportable):
 
     def save_to_file(self):
 
-        cur_objects = set([obj.full_name for obj in self.conf_objects])
+        filtered_objects = filter(lambda x: x.obj_type != ObjectType.SUBSYSTEM or x.level < 1, self.conf_objects)
+
+        cur_objects = set([obj.full_name for obj in filtered_objects])
         file_obj = set(self._parser.object_list())
         new_objects_str = [el.split('.') for el in cur_objects - file_obj]
 
