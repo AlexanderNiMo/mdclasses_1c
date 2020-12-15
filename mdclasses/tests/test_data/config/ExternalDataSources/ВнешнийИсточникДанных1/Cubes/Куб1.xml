@@ -1,0 +1,125 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.9">
+	<Cube uuid="7a41ea06-bd57-4ae8-9124-933bf9c9ec49">
+		<InternalInfo>
+			<xr:GeneratedType name="ExternalDataSourceCubeManager.ВнешнийИсточникДанных1.Куб1" category="Manager">
+				<xr:TypeId>7f5d8591-839b-4cd0-9036-31b694c2899e</xr:TypeId>
+				<xr:ValueId>4556a36d-5b6c-427a-b053-98162089444d</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="ExternalDataSourceCubeList.ВнешнийИсточникДанных1.Куб1" category="List">
+				<xr:TypeId>d7c66107-862f-404e-9c60-4015eb6ca100</xr:TypeId>
+				<xr:ValueId>7f40b724-7b2a-4e4a-ab96-6b8c9c926147</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="ExternalDataSourceCubeRecordSet.ВнешнийИсточникДанных1.Куб1" category="RecordSet">
+				<xr:TypeId>1393ec21-87ed-4cc2-a0a7-8474793fb681</xr:TypeId>
+				<xr:ValueId>ef7ce424-ae07-4689-a590-c99c884e016b</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="ExternalDataSourceCubeRecordKey.ВнешнийИсточникДанных1.Куб1" category="RecordKey">
+				<xr:TypeId>95b0263c-06ac-4cfe-aed9-4613e435025b</xr:TypeId>
+				<xr:ValueId>75c36c5c-01a7-4ab1-96f8-da6bc12671d5</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="ExternalDataSourceCubeRecordManager.ВнешнийИсточникДанных1.Куб1" category="RecordManager">
+				<xr:TypeId>e165aac8-c792-40ca-b645-4caab156b443</xr:TypeId>
+				<xr:ValueId>555dd387-5f15-4bec-93d3-fdf1fe1c62aa</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="ExternalDataSourceCubeDimensionsTablesManager.ВнешнийИсточникДанных1.Куб1" category="DimensionTables">
+				<xr:TypeId>ebe108c0-a565-4096-9ab6-de38928f502a</xr:TypeId>
+				<xr:ValueId>8e06d60b-d291-4305-870b-0bcee0652ac4</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties>
+			<Name>Куб1</Name>
+			<Synonym/>
+			<Comment/>
+			<NameInDataSource>kube</NameInDataSource>
+			<Characteristics/>
+			<UseStandardCommands>false</UseStandardCommands>
+			<DefaultRecordForm>ExternalDataSource.ВнешнийИсточникДанных1.Cube.Куб1.Form.ФормаЗаписи</DefaultRecordForm>
+			<DefaultListForm>ExternalDataSource.ВнешнийИсточникДанных1.Cube.Куб1.Form.ФормаСписка</DefaultListForm>
+			<RecordPresentation/>
+			<ExtendedRecordPresentation/>
+			<ListPresentation/>
+			<ExtendedListPresentation/>
+			<Explanation/>
+			<IncludeHelpInContents>false</IncludeHelpInContents>
+		</Properties>
+		<ChildObjects>
+			<DimensionTable>ТаблицаИзмерения1</DimensionTable>
+			<Dimension uuid="49522e20-482e-4aa7-9675-7379d48dede0">
+				<Properties>
+					<Name>Измерение1</Name>
+					<Synonym/>
+					<Comment/>
+					<Type>
+						<v8:Type>cfg:ExternalDataSourceCubeDimensionTableRef.ВнешнийИсточникДанных1.Куб1.ТаблицаИзмерения1</v8:Type>
+					</Type>
+					<PasswordMode>false</PasswordMode>
+					<Format/>
+					<EditFormat/>
+					<ToolTip/>
+					<MarkNegatives>false</MarkNegatives>
+					<Mask/>
+					<MultiLine>false</MultiLine>
+					<ExtendedEdit>false</ExtendedEdit>
+					<MinValue xsi:nil="true"/>
+					<MaxValue xsi:nil="true"/>
+					<FillChecking>DontCheck</FillChecking>
+					<ChoiceFoldersAndItems>Items</ChoiceFoldersAndItems>
+					<ChoiceParameterLinks/>
+					<ChoiceParameters/>
+					<QuickChoice>Auto</QuickChoice>
+					<CreateOnInput>Auto</CreateOnInput>
+					<ChoiceForm/>
+					<LinkByType/>
+					<ChoiceHistoryOnInput>Auto</ChoiceHistoryOnInput>
+				</Properties>
+			</Dimension>
+			<Resource uuid="3b792f24-85d0-483f-83a6-3e14fa3c993b">
+				<Properties>
+					<Name>Ресурс1</Name>
+					<Synonym/>
+					<Comment/>
+					<Type>
+						<v8:Type>xs:string</v8:Type>
+						<v8:StringQualifiers>
+							<v8:Length>10</v8:Length>
+							<v8:AllowedLength>Variable</v8:AllowedLength>
+						</v8:StringQualifiers>
+					</Type>
+					<PasswordMode>false</PasswordMode>
+					<Format/>
+					<EditFormat/>
+					<ToolTip/>
+					<MarkNegatives>false</MarkNegatives>
+					<Mask/>
+					<MultiLine>false</MultiLine>
+					<ChoiceParameterLinks/>
+					<ChoiceParameters/>
+					<QuickChoice>Auto</QuickChoice>
+					<ChoiceForm/>
+					<ExtendedEdit>false</ExtendedEdit>
+					<NameInDataSource>recurse</NameInDataSource>
+				</Properties>
+			</Resource>
+			<Form>ФормаСписка</Form>
+			<Form>ФормаЗаписи</Form>
+			<Form>ФормаНабораЗаписей</Form>
+			<Command uuid="bb3dc118-25dd-45ec-9ed2-ebd86c7fa73a">
+				<Properties>
+					<Name>Команда1</Name>
+					<Synonym/>
+					<Comment/>
+					<Group>CommandGroup.ГруппаКоманд1</Group>
+					<CommandParameterType/>
+					<ParameterUseMode>Single</ParameterUseMode>
+					<ModifiesData>false</ModifiesData>
+					<Representation>Auto</Representation>
+					<ToolTip/>
+					<Picture/>
+					<Shortcut/>
+					<OnMainServerUnavalableBehavior>Auto</OnMainServerUnavalableBehavior>
+				</Properties>
+			</Command>
+		</ChildObjects>
+	</Cube>
+</MetaDataObject>
