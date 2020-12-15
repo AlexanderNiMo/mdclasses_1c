@@ -33,7 +33,7 @@ class TestConfiguration(case.TestCase):
             'Не верно установлен корень конфигурации'
         )
 
-        self.assertEqual(len(conf.conf_objects), 45, 'Не корректно загружен состав объектов.')
+        self.assertEqual(len(conf.conf_objects), 46, 'Не корректно загружен состав объектов.')
 
         report = conf.get_object('Отчет1', ObjectType.REPORT)
 
@@ -89,6 +89,27 @@ class TestConfiguration(case.TestCase):
 
     def test_read_props(self):
         pass
+
+    def test_read_subsystem(self):
+        conf_path = Path(test_data_root).absolute()
+        conf = create_configuration(conf_path)
+        read_configuration_objects(conf)
+
+        sub_2 = conf.get_object('Подсистема2', ObjectType.SUBSYSTEM)
+
+        self.assertEqual(sub_2.name, 'Подсистема2', 'Вложенная подсистема не прочитанна')
+
+        for obj in conf.conf_objects:
+            if obj.obj_type != ObjectType.SUBSYSTEM:
+                continue
+            ch = obj.childes
+            objects = 1
+            if obj.name == 'Подсистема1':
+                objects = 44
+            elif obj.name == 'Подсистема3':
+                objects = 3
+
+            self.assertEqual(len(ch), objects, f'Не все объекты подсистемы {obj} прочитанны')
 
     def test_read_obj_module(self):
         conf_path = Path(test_data_root).absolute()

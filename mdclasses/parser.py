@@ -20,10 +20,14 @@ class XMLParser:
 
 
 def get_parser(file: Union[str, Path], obj_type: ObjectType,
-               export_type: Format = Format.CONFIGURATOR) -> Union['PureXMLConfigParser', 'PureXMLObjectParser']:
+               export_type: Format = Format.CONFIGURATOR) -> Union['PureXMLConfigParser',
+                                                                   'PureXMLObjectParser',
+                                                                   'PureXMLSubsystemParser']:
     if export_type == Format.CONFIGURATOR:
         if obj_type == ObjectType.CONFIGURATION:
             return PureXMLConfigParser(file, obj_type)
+        if obj_type == ObjectType.SUBSYSTEM:
+            return PureXMLSubsystemParser(file, obj_type)
         else:
             return PureXMLObjectParser(file, obj_type)
     else:
@@ -125,13 +129,28 @@ class PureXMLObjectParser(PureXMLParser, ABCObjectParser):
 
         properties = _read_properties(obj)
 
-        if self.obj_type in [
-            ObjectType.SUBSYSTEM,
-        ]:
-            return uuid, childes, name_obj.sourceline, properties
-
         for child_obj in child_objs:
             set_child_by_tag(childes, child_obj)
+
+        return uuid, childes, name_obj.sourceline, properties
+
+
+class PureXMLSubsystemParser(PureXMLParser, ABCObjectParser):
+
+    def parse(self) -> (str, list, str, dict):
+        obj = self._get_root()
+
+        childes = dict(
+            others=list()
+        )
+        uuid = _get_uuid(obj)
+        child_objs = _get_childes(obj)
+        name_obj = _get_property(obj, 'Name')[0]
+        properties = _read_properties(obj)
+        properties.pop('Content')
+        childes['others'] = [cont.text.split('.')[:2] for cont in _get_property(obj, 'Content')[0]]
+
+        childes['others'].extend([[QName(ch).localname, ch.text] for ch in child_objs])
 
         return uuid, childes, name_obj.sourceline, properties
 
@@ -226,7 +245,6 @@ def set_child_by_tag(childes: Dict[str, list], obj: ElementTree):
         pass
     elif tag in ['Recalculation', 'Table', 'Cube', 'Function']:
         pass
-
     elif tag in ['Attribute', 'Operation', 'Column',
                  'EnumValue', 'Resource', 'Dimension',
                  'AccountingFlag', 'ExtDimensionAccountingFlag',
@@ -236,6 +254,11 @@ def set_child_by_tag(childes: Dict[str, list], obj: ElementTree):
         tabular_data = _parse_attr_child(obj)
         tabular_data['attributes'] = [_parse_attr_child(tab_attr) for tab_attr in _get_childes(obj)]
         childes['attributes'].append(tabular_data)
+    elif tag in [v.value for v in list(ObjectType)]:
+        childes['others'].append((
+            obj.text,
+            tag
+        ))
     else:
         raise ValueError(f'Не описан tag {tag}')
 

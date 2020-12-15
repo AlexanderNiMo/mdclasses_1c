@@ -1,8 +1,10 @@
 from typing import Union
 from pathlib import Path
 from json import load, dump
+
+
 from mdclasses.parser import get_parser, SupportConfigurationParser
-from mdclasses.conf_base import Configuration
+from mdclasses.conf_base import Configuration, SubSystem
 from mdclasses.utils.path_resolver import get_path_resolver
 from mdclasses.configuration_enums import ObjectType, Format
 
@@ -25,7 +27,7 @@ def create_configuration(config_dir: Union[str, Path], file_format: Format = For
     uuid, child_data, name, props = parser.parse()
 
     return Configuration(uuid=uuid, conf_objects=child_data, root_path=config_dir,
-                         name=name, props=props, parser=parser)
+                         name=name, props=props, parser=parser, file_format=file_format)
 
 
 def get_support_data(config_dir: Union[str, Path]):
@@ -35,22 +37,43 @@ def get_support_data(config_dir: Union[str, Path]):
     return parser.parse()
 
 
-def read_configuration_objects(conf: Configuration, file_format: Format = Format.CONFIGURATOR):
-    path_resolver = get_path_resolver(file_format)
+def read_configuration_objects(conf: Configuration):
 
     for conf_object in conf.conf_objects:
 
-        object_config = conf.root_path.joinpath(path_resolver.conf_file_path(conf_object.obj_type, conf_object.name))
-        parser = get_parser(object_config, conf_object.obj_type)
-        conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = parser.parse()
+        conf_object.uuid, obj_childes, conf_object.line_number, conf_object.props = read_configuration_object(conf_object)
         conf_object.set_childes(obj_childes)
+
+        if conf_object.obj_type != ObjectType.SUBSYSTEM:
+            continue
+
+        handle_child_subsystems(conf, conf_object, obj_childes)
+
+
+def read_configuration_object(conf_object):
+        object_config = conf_object.file_name
+        parser = get_parser(object_config, conf_object.obj_type)
+        return parser.parse()
+
+
+def handle_child_subsystems(conf: Configuration, obj: SubSystem, obj_childes: dict):
+
+    for subsystem in filter(lambda ch: ch[0] == 'Subsystem', obj_childes['others']):
+        conf_obj = SubSystem(
+            name=subsystem[1],
+            parent=obj
+        )
+        conf_obj.uuid, obj_childes, conf_obj.line_number, conf_obj.props = read_configuration_object(conf_obj)
+        conf_obj.set_childes(obj_childes)
+        conf.conf_objects.append(conf_obj)
+        handle_child_subsystems(conf, conf_obj, obj_childes)
 
 
 def save_to_json(conf: Configuration, json_path: [str, Path]):
     json_path = Path(json_path)
     data = conf.to_dict()
     with json_path.open('w', encoding='utf-8') as f:
-        dump(data, f)
+        dump(data, f, ensure_ascii=False)
 
 
 def read_from_json(json_path: Union[str, Path]):

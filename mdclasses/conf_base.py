@@ -13,7 +13,7 @@ from mdclasses.utils.path_resolver import get_path_resolver, ABCPathResolver
 class Serializable(ABC):
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> dict:
         pass
 
     @classmethod
@@ -42,10 +42,10 @@ class Supportable(Serializable):
             SupportType.NOT_SUPPORTED
         ]
     
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return dict(
             uuid=self.uuid,
-            support_type=self.support_type.value
+            support_type={self.uuid: self.support_type.value}
         )
 
     @classmethod
@@ -56,6 +56,92 @@ class Supportable(Serializable):
 
         obj.uuid = data['uuid']
         obj.set_support(data['support_type'])
+
+
+class SubSystem(Supportable):
+
+    def __init__(self, name, parent: Union['Configuration', 'SubSystem'], childes: list = None,
+                 line_number: int = 0, props: dict = None,
+                 file_format: Format = Format.CONFIGURATOR):
+
+        super(SubSystem, self).__init__()
+
+        self.file_format = file_format
+        self.__path_resolver: Optional[ABCPathResolver] = None
+
+        self.line_number = line_number
+
+        self.parent = parent
+        self.name = name
+        self.obj_type = ObjectType.SUBSYSTEM
+
+        self.props = {} if props is None else props
+        self._childes_names = [] if childes is None else childes
+        self._childes: Optional[List[Union['SubSystem', ObjectType]]] = None
+
+    @property
+    def childes(self) -> List[Union['SubSystem', ObjectType]]:
+        if self._childes is None:
+            self._childes = list()
+            for obj_type, name in self._childes_names:
+                self._childes.append(self.parent.get_object(name, obj_type))
+        return self._childes
+
+    def get_object(self, name: str, obj_type: Union[ObjectType, str]):
+        return self.parent.get_object(name, obj_type)
+
+    def set_childes(self, childes: Dict[str, list]):
+        self._childes_names = childes['others']
+
+    @property
+    def path_resolver(self) -> ABCPathResolver:
+        if self.__path_resolver is None:
+            self.__path_resolver = get_path_resolver(self.file_format)
+        return self.__path_resolver
+
+    @property
+    def root_path(self) -> Path:
+        if isinstance(self.parent, Configuration):
+            return self.parent.root_path
+        else:
+            parent_ext_path = self.path_resolver.ext_path(self.parent.obj_type, self.parent.name)
+            return self.parent.root_path.joinpath(parent_ext_path.parent)
+
+    @property
+    def file_name(self) -> Path:
+        return self.root_path.joinpath(self.path_resolver.conf_file_path(self.obj_type, self.name))
+
+    @property
+    def full_name(self):
+        return f'{self.obj_type.value}.{self.name}'
+
+    def to_dict(self) -> dict:
+        data = super(SubSystem, self).to_dict()
+        data['file_format'] = self.file_format.value
+        data['line_number'] = self.line_number
+        data['name'] = self.name
+        data['props'] = self.props
+        data['obj_type'] = self.obj_type.value
+        data['childes'] = [(ch.name, ch.obj_type.value) for ch in self.childes]
+
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict, parent: 'Configuration'):
+        obj = cls(
+            name=data['name'],
+            parent=parent,
+            line_number=data['line_number'],
+            file_format=Format(data['file_format'])
+        )
+        obj.uuid = data['uuid']
+        obj.set_support(data['support_type'])
+        obj.parent = parent
+
+        return obj
+
+    def __repr__(self):
+        return f'<Subsystem: {self.name}>'
 
 
 class ConfObject(Supportable):
@@ -210,7 +296,8 @@ class ConfObject(Supportable):
                 templates=[template.to_dict() for template in self.templates],
                 commands=[command.to_dict() for command in self.commands],
                 line_number=self.line_number,
-                file_format=self.file_format.value
+                file_format=self.file_format.value,
+                props=self.props
             )
         )
         return data
@@ -222,10 +309,11 @@ class ConfObject(Supportable):
             parent=parent,
             line_number=data['line_number'],
             obj_type=data['obj_type'],
-            file_format=Format(data['file_format'])
+            file_format=Format(data['file_format']),
+            props=data['props']
         )
 
-        obj.uuid = data['uuid'],
+        obj.uuid = data['uuid']
         obj.set_childes(data)
         return obj
 
@@ -302,16 +390,23 @@ class Configuration(Supportable):
         self.root_path = Path(root_path)
         self.file_format = file_format
 
-        self.conf_objects = [
-            ConfObject(
-                name=conf_obj['obj_name'],
-                obj_type=conf_obj['obj_type'],
-                parent=self
-            ) for conf_obj in conf_objects
-        ]
+        self.conf_objects = [self.read_child(conf_obj) for conf_obj in conf_objects]
         self.support_type = SupportType.NONE_SUPPORT
         self.props = props
         self.__path_resolver: Optional[ABCPathResolver] = None
+
+    def read_child(self, conf_obj: dict) -> Union[ConfObject, SubSystem]:
+        if conf_obj['obj_type'] == 'Subsystem':
+            return SubSystem(
+                name=conf_obj['obj_name'],
+                parent=self
+            )
+        else:
+            return ConfObject(
+                name=conf_obj['obj_name'],
+                obj_type=conf_obj['obj_type'],
+                parent=self
+            )
 
     @property
     def path_resolver(self):
@@ -332,7 +427,7 @@ class Configuration(Supportable):
         for obj in self.conf_objects:
             obj.set_support(conf_support)
 
-    def get_object(self, name: str, obj_type: Union[ObjectType, str]) -> ConfObject:
+    def get_object(self, name: str, obj_type: Union[ObjectType, str]) -> Union[ConfObject, SubSystem]:
         cur_obj_type = obj_type
         if isinstance(obj_type, str):
             cur_obj_type = ObjectType(obj_type)
@@ -386,7 +481,15 @@ class Configuration(Supportable):
             parser=data.get('parser'),
             file_format=Format(data.get('file_format'))
         )
-        conf.conf_objects = [ConfObject.from_dict(obj_data, conf) for obj_data in data['conf_objects']]
+        conf.conf_objects = []
+        for obj_data in data['conf_objects']:
+            obj = None
+            if obj_data['obj_type'] == 'Subsystem':
+                obj = SubSystem.from_dict(obj_data, conf)
+            else:
+                obj = ConfObject.from_dict(obj_data, conf)
+            conf.conf_objects.append(obj)
+
         return conf
 
     def to_dict(self):
